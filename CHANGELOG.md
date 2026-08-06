@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.13.1
+
+- Replace spring overshoot with monotonic delayed interpolation that settles without passing the wearer
+- Give every pane its own deterministic position and rotation delay instead of scaling one shared motion
+- Apply separate stable delay profiles to both focus rings and all 22 film fragments
+- Allow delayed parts to trail by up to roughly 1.5 visible blocks in any direction
+
 ## 0.13.0
 
 - Add spring-based delayed following for the observer array using interpolated world position and body rotation
