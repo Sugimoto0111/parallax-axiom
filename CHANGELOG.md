@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.2
+
+- Reduce maximum visible follow separation from roughly 1.5 blocks to one block
+- Remove the eight-block internal emergency snap that caused repeated flicker during extreme flight
+- Clamp every follower's stored anchor continuously so fast movement holds a stable trailing position
+
 ## 0.13.1
 
 - Replace spring overshoot with monotonic delayed interpolation that settles without passing the wearer

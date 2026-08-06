@@ -35,6 +35,7 @@ import java.util.UUID;
 @Mod.EventBusSubscriber(modid = UltimatumMod.MOD_ID, value = Dist.CLIENT)
 public final class ObserverArrayRenderer implements ICurioRenderer {
     private static final float DEG_TO_RAD = ((float) Math.PI / 180.0F);
+    private static final double MAX_LOCAL_FOLLOW_DISTANCE = 0.80D;
     private static final int FOCUS_DURATION = 12;
     private static final Map<UUID, FocusState> FOCUS_STATES = new HashMap<>();
     private static final Map<UUID, ObserverFollowState> FOLLOW_STATES = new HashMap<>();
@@ -276,8 +277,7 @@ public final class ObserverArrayRenderer implements ICurioRenderer {
         ObserverFollowState state = FOLLOW_STATES.computeIfAbsent(wearer.getUUID(),
                 ignored -> new ObserverFollowState(currentPosition, currentYaw, time));
         float deltaTicks = time - state.lastTime;
-        if (deltaTicks < 0.0F || deltaTicks > 3.0F
-                || state.referenceAnchor().distanceToSqr(currentPosition) > 64.0D) {
+        if (deltaTicks < 0.0F) {
             state.snap(currentPosition, currentYaw, time);
         } else if (deltaTicks > 0.0F) {
             state.update(currentPosition, currentYaw, deltaTicks, time);
@@ -290,10 +290,10 @@ public final class ObserverArrayRenderer implements ICurioRenderer {
                                                   float currentYaw) {
         Vec3 worldOffset = anchor.subtract(currentPosition);
         double distance = worldOffset.length();
-        // The entire manifestation is rendered at 1.25 scale, so 1.2 local
-        // blocks becomes a visible maximum follow distance of about 1.5 blocks.
-        if (distance > 1.20D) {
-            worldOffset = worldOffset.scale(1.20D / distance);
+        // The manifestation is rendered at 1.25 scale, so 0.8 local blocks
+        // becomes a visible maximum follow distance of about one block.
+        if (distance > MAX_LOCAL_FOLLOW_DISTANCE) {
+            worldOffset = worldOffset.scale(MAX_LOCAL_FOLLOW_DISTANCE / distance);
         }
 
         float bodyYaw = currentYaw * DEG_TO_RAD;
@@ -441,10 +441,6 @@ public final class ObserverArrayRenderer implements ICurioRenderer {
             lastTime = time;
         }
 
-        private Vec3 referenceAnchor() {
-            return panes[0].anchor;
-        }
-
         private void update(Vec3 position, float bodyYaw, float deltaTicks,
                             float time) {
             updateAll(panes, position, bodyYaw, deltaTicks);
@@ -531,6 +527,11 @@ public final class ObserverArrayRenderer implements ICurioRenderer {
         private void update(Vec3 position, float bodyYaw, float deltaTicks) {
             double positionBlend = 1.0D - Math.pow(positionRetention, deltaTicks);
             anchor = anchor.lerp(position, positionBlend);
+            Vec3 offset = anchor.subtract(position);
+            double distance = offset.length();
+            if (distance > MAX_LOCAL_FOLLOW_DISTANCE) {
+                anchor = position.add(offset.scale(MAX_LOCAL_FOLLOW_DISTANCE / distance));
+            }
             float yawBlend = 1.0F - (float) Math.pow(yawRetention, deltaTicks);
             yaw += Mth.wrapDegrees(bodyYaw - yaw) * yawBlend;
         }
