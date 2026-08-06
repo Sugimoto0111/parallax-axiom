@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.15.4
+
+- Normalize epoch milliseconds into a short float-safe time window before calculating tooltip animation phases
+- Advance per-glyph position, scale, title color, lore sweep and frame drift smoothly every rendered frame
+- Fix the apparent frozen text where refraction echoes rendered but all animation phases stayed unchanged
+
 ## 0.15.3
 
 - Increase title motion to a clearly visible three-pixel per-glyph wave and lore motion to nearly two pixels

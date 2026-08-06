@@ -104,9 +104,10 @@ public final class ClientParallaxTooltip {
         int textY = top + CONTENT_PADDING;
 
         long now = System.currentTimeMillis();
+        float timeSeconds = animationSeconds(now);
         float cursorPhase = Mth.positiveModulo(event.getX() * 0.0021F
                 + event.getY() * 0.0013F, 1.0F);
-        float phase = Mth.positiveModulo(now / 9000.0F + cursorPhase, 1.0F);
+        float phase = Mth.positiveModulo(timeSeconds / 9.0F + cursorPhase, 1.0F);
         int filmTop = withAlpha(Mth.hsvToRgb(phase, 0.34F, 1.0F), 205);
         int filmBottom = withAlpha(Mth.hsvToRgb(
                 Mth.positiveModulo(phase + 0.24F, 1.0F), 0.42F, 0.92F), 175);
@@ -114,7 +115,7 @@ public final class ClientParallaxTooltip {
                 Mth.positiveModulo(phase + 0.48F, 1.0F), 0.30F, 0.88F), 45);
         int ghostB = withAlpha(Mth.hsvToRgb(
                 Mth.positiveModulo(phase + 0.72F, 1.0F), 0.38F, 0.96F), 36);
-        int drift = Math.round(Mth.sin(now * 0.0013F) * 1.5F);
+        int drift = Math.round(Mth.sin(timeSeconds * 1.3F) * 1.5F);
         int cursorDriftX = Mth.clamp((event.getX() - event.getScreenWidth() / 2) / 90,
                 -2, 2);
         int cursorDriftY = Mth.clamp((event.getY() - event.getScreenHeight() / 2) / 80,
@@ -169,7 +170,7 @@ public final class ClientParallaxTooltip {
                 renderAnimatedGlyphs(font,
                         ((ClientTextTooltipAccessor) (Object) textTooltip)
                                 .ultimatum$getText(),
-                        textX, componentY, index, now, poseStack,
+                        textX, componentY, index, timeSeconds, poseStack,
                         graphics.bufferSource());
             } else {
                 component.renderText(font, textX, componentY,
@@ -191,7 +192,7 @@ public final class ClientParallaxTooltip {
     private static void renderAnimatedGlyphs(Font font,
                                              FormattedCharSequence sequence,
                                              float startX, float startY,
-                                             int line, long now,
+                                             int line, float timeSeconds,
                                              PoseStack poseStack,
                                              MultiBufferSource.BufferSource buffers) {
         if (!reportedGlyphRenderer) {
@@ -205,12 +206,13 @@ public final class ClientParallaxTooltip {
             case 1, 2 -> 1.85F;
             default -> 1.35F;
         };
-        float speed = line == 0 ? 0.0044F : 0.0037F;
+        float speed = line == 0 ? 4.4F : 3.7F;
         float phaseStep = line == 0 ? 0.72F : 0.58F;
 
         sequence.accept((ignoredIndex, style, codePoint) -> {
             int currentGlyph = glyphIndex[0]++;
-            float phase = now * speed + currentGlyph * phaseStep + line * 1.37F;
+            float phase = timeSeconds * speed + currentGlyph * phaseStep
+                    + line * 1.37F;
             float waveY = Mth.sin(phase) * amplitude;
             float refractX = Mth.cos(phase * 0.71F) *
                     (line == 0 ? 0.95F : 0.38F);
@@ -265,12 +267,14 @@ public final class ClientParallaxTooltip {
     private static FormattedText animateText(FormattedText source, int line,
                                              long now) {
         MutableComponent animated = Component.empty();
+        float timeSeconds = animationSeconds(now);
         int length = Math.max(1, source.getString().codePointCount(
                 0, source.getString().length()));
         int[] characterIndex = {0};
         source.visit((style, segment) -> {
             segment.codePoints().forEach(codePoint -> {
-                int color = animatedTextColor(line, characterIndex[0], length, now);
+                int color = animatedTextColor(line, characterIndex[0], length,
+                        timeSeconds);
                 Style coloredStyle = style.withColor(TextColor.fromRgb(color));
                 animated.append(Component.literal(new String(Character.toChars(codePoint)))
                         .setStyle(coloredStyle));
@@ -282,28 +286,31 @@ public final class ClientParallaxTooltip {
     }
 
     private static int animatedTextColor(int line, int character, int length,
-                                         long now) {
+                                         float timeSeconds) {
         float position = character / (float) Math.max(1, length - 1);
         if (line == 0) {
-            float hue = Mth.positiveModulo(now / 7200.0F + position * 0.42F, 1.0F);
+            float hue = Mth.positiveModulo(timeSeconds / 7.2F
+                    + position * 0.42F, 1.0F);
             float brightness = 0.91F + 0.09F * Mth.sin(
-                    now * 0.0031F - character * 0.58F);
+                    timeSeconds * 3.1F - character * 0.58F);
             return Mth.hsvToRgb(hue, 0.43F, brightness);
         }
 
         if (line == 1 || line == 2) {
-            float sweep = Mth.positiveModulo(now / 3100.0F + line * 0.19F, 1.0F);
+            float sweep = Mth.positiveModulo(timeSeconds / 3.1F
+                    + line * 0.19F, 1.0F);
             float distance = Math.abs(position - sweep);
             distance = Math.min(distance, 1.0F - distance);
             float highlight = Mth.clamp(1.0F - distance * 8.5F, 0.0F, 1.0F);
             highlight *= highlight;
-            int film = Mth.hsvToRgb(Mth.positiveModulo(now / 8500.0F
+            int film = Mth.hsvToRgb(Mth.positiveModulo(timeSeconds / 8.5F
                     + line * 0.17F, 1.0F), 0.34F, 1.0F);
             return mixRgb(0x98A3AE, film, 0.78F * highlight);
         }
 
-        float pulse = 0.5F + 0.5F * Mth.sin(now * 0.0024F - character * 0.24F);
-        int film = Mth.hsvToRgb(Mth.positiveModulo(now / 9000.0F
+        float pulse = 0.5F + 0.5F * Mth.sin(timeSeconds * 2.4F
+                - character * 0.24F);
+        int film = Mth.hsvToRgb(Mth.positiveModulo(timeSeconds / 9.0F
                 + position * 0.18F, 1.0F), 0.42F, 0.92F);
         return mixRgb(0x3B7380, film, 0.25F + pulse * 0.48F);
     }
@@ -314,6 +321,13 @@ public final class ClientParallaxTooltip {
         int green = Math.round(Mth.lerp(clamped, from >> 8 & 0xFF, to >> 8 & 0xFF));
         int blue = Math.round(Mth.lerp(clamped, from & 0xFF, to & 0xFF));
         return red << 16 | green << 8 | blue;
+    }
+
+    private static float animationSeconds(long now) {
+        // Epoch milliseconds cannot retain frame-sized changes after conversion
+        // to float. Keep the value in a short repeating window before doing any
+        // float animation math so every rendered frame advances its phase.
+        return now % 3_600_000L / 1000.0F;
     }
 
     private static void drawFrame(GuiGraphics graphics, int left, int top,
