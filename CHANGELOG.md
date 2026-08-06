@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.4
+
+- Expand the observer array from 10 to 22 independently drifting film fragments
+- Mix seven fragment scales from tiny splinters to large irregular shards
+- Vary fragment height, distance, depth, aspect ratio and rotation speed to avoid a uniform ring
+
 ## 0.12.3
 
 - Lower the observer array another 0.15 blocks behind the wearer

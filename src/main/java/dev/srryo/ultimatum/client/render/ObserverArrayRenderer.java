@@ -188,27 +188,47 @@ public final class ObserverArrayRenderer implements ICurioRenderer {
     private static void renderFragments(PoseStack poseStack, VertexConsumer glass,
                                         VertexConsumer film, float time,
                                         ViewFactors view, float focus) {
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 22; i++) {
             float side = (i % 2 == 0) ? -1.0F : 1.0F;
-            float row = i / 2.0F;
-            float x = side * (0.66F + row * 0.095F);
-            float y = -0.52F + (i % 5) * 0.26F;
+            float distance = 0.52F + ((i * 5) % 9) * 0.075F
+                    + (i >= 14 ? 0.07F : 0.0F);
+            float x = side * distance;
+            float y = -0.64F + ((i * 7) % 13) * 0.105F;
             x += Mth.sin(time * (0.031F + i * 0.0015F) + i * 1.71F)
-                    * 0.045F;
-            y += Mth.cos(time * 0.039F + i * 0.83F) * 0.035F;
-            float z = -0.04F + (i % 3) * 0.045F;
+                    * (0.028F + (i % 4) * 0.008F);
+            y += Mth.cos(time * (0.032F + (i % 5) * 0.0018F) + i * 0.83F)
+                    * (0.024F + (i % 3) * 0.008F);
+            float z = -0.07F + (i % 5) * 0.035F;
             int color = filmColor(time, i * 0.083F + view.side * 0.1F);
 
             poseStack.pushPose();
             poseStack.translate(x, y, z);
-            poseStack.mulPose(Axis.ZP.rotationDegrees(i * 37.0F + time * 0.34F));
-            float size = 0.045F + (i % 3) * 0.012F;
-            diamond(glass, poseStack.last().pose(), size * 1.6F, size,
+            poseStack.mulPose(Axis.ZP.rotationDegrees(i * 37.0F
+                    + time * (0.18F + (i % 6) * 0.055F)));
+            float size = fragmentSize(i);
+            float widthRatio = 0.46F + (i % 4) * 0.11F;
+            float heightRatio = 1.25F + (i % 3) * 0.23F;
+            diamond(glass, poseStack.last().pose(), size * heightRatio,
+                    size * widthRatio,
                     3, 7, 10, 18 + (int) (focus * 8));
-            diamond(film, poseStack.last().pose(), size, size * 0.55F,
+            diamond(film, poseStack.last().pose(), size * 0.72F,
+                    size * widthRatio * 0.58F,
                     red(color), green(color), blue(color), 58 + (int) (focus * 95));
             poseStack.popPose();
         }
+    }
+
+    private static float fragmentSize(int index) {
+        return switch (index % 8) {
+            case 0 -> 0.110F;
+            case 1 -> 0.084F;
+            case 2 -> 0.066F;
+            case 3 -> 0.052F;
+            case 4 -> 0.039F;
+            case 5 -> 0.029F;
+            case 6 -> 0.021F;
+            default -> 0.046F;
+        };
     }
 
     private static float focusAmount(LivingEntity wearer, FocusState state, float partialTicks) {
