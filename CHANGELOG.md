@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.13.0
+
+- Add spring-based delayed following for the observer array using interpolated world position and body rotation
+- Let the structure trail movement, overshoot slightly after abrupt stops and settle back into place
+- Give central panes restrained lag while outer panes, rings and fragments respond more independently
+- Clamp translation and rotation lag so teleports and extreme flight speeds cannot detach the effect
+
 ## 0.12.5
 
 - Move 18 film fragments into loose bands beyond the left and right pane edges

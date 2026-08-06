@@ -37,6 +37,7 @@ public final class ObserverArrayRenderer implements ICurioRenderer {
     private static final float DEG_TO_RAD = ((float) Math.PI / 180.0F);
     private static final int FOCUS_DURATION = 12;
     private static final Map<UUID, FocusState> FOCUS_STATES = new HashMap<>();
+    private static final Map<UUID, FollowState> FOLLOW_STATES = new HashMap<>();
 
     @SubscribeEvent
     public static void onAttack(InputEvent.InteractionKeyMappingTriggered event) {
@@ -72,6 +73,7 @@ public final class ObserverArrayRenderer implements ICurioRenderer {
         }
 
         ViewFactors view = viewFactors(wearer, partialTicks);
+        FollowMotion follow = followMotion(wearer, partialTicks);
         VertexConsumer glass = buffers.getBuffer(ObserverRenderTypes.GLASS);
         VertexConsumer film = buffers.getBuffer(ObserverRenderTypes.FILM);
 
@@ -82,43 +84,47 @@ public final class ObserverArrayRenderer implements ICurioRenderer {
         poseStack.translate(0.0D, -0.45D, 0.34D);
         poseStack.scale(1.25F, 1.25F, 1.25F);
 
-        renderPanels(poseStack, glass, film, time, view, focus);
-        renderFocusRings(poseStack, film, time, view, focus);
-        renderFragments(poseStack, glass, film, time, view, focus);
+        renderPanels(poseStack, glass, film, time, view, follow, focus);
+        renderFocusRings(poseStack, film, time, view, follow, focus);
+        renderFragments(poseStack, glass, film, time, view, follow, focus);
         poseStack.popPose();
     }
 
     private static void renderPanels(PoseStack poseStack, VertexConsumer glass,
                                      VertexConsumer film, float time,
-                                     ViewFactors view, float focus) {
-        renderPanel(poseStack, glass, film, time, view, focus,
+                                     ViewFactors view, FollowMotion follow, float focus) {
+        renderPanel(poseStack, glass, film, time, view, follow, focus,
                 0, 0.0F, -0.05F, 0.08F, 0.58F, 1.35F, 0.0F);
-        renderPanel(poseStack, glass, film, time, view, focus,
+        renderPanel(poseStack, glass, film, time, view, follow, focus,
                 1, -0.57F, -0.02F + Mth.sin(time * 0.055F) * 0.035F,
                 0.0F, 0.38F, 1.08F, -18.0F);
-        renderPanel(poseStack, glass, film, time, view, focus,
+        renderPanel(poseStack, glass, film, time, view, follow, focus,
                 2, 0.57F, -0.02F + Mth.sin(time * 0.055F + 2.1F) * 0.035F,
                 -0.01F, 0.38F, 1.08F, 18.0F);
-        renderPanel(poseStack, glass, film, time, view, focus,
+        renderPanel(poseStack, glass, film, time, view, follow, focus,
                 3, -0.86F, 0.18F + Mth.sin(time * 0.043F + 4.0F) * 0.045F,
                 -0.08F, 0.22F, 0.72F, -31.0F);
-        renderPanel(poseStack, glass, film, time, view, focus,
+        renderPanel(poseStack, glass, film, time, view, follow, focus,
                 4, 0.86F, 0.18F + Mth.sin(time * 0.043F + 1.2F) * 0.045F,
                 -0.08F, 0.22F, 0.72F, 31.0F);
     }
 
     private static void renderPanel(PoseStack poseStack, VertexConsumer glass,
                                     VertexConsumer film, float time, ViewFactors view,
-                                    float focus, int index, float x, float y, float z,
-                                    float width, float height, float yaw) {
+                                    FollowMotion follow, float focus, int index,
+                                    float x, float y, float z, float width,
+                                    float height, float yaw) {
         float phase = index * 1.37F;
         float horizontalDrift = Mth.sin(time * (0.026F + index * 0.0015F) + phase)
                 * (index == 0 ? 0.025F : 0.042F);
         float yawDrift = Mth.sin(time * 0.021F + phase * 0.73F) * 2.8F;
         float rollDrift = Mth.cos(time * 0.018F + phase * 1.11F) * 1.6F;
+        float followStrength = index == 0 ? 0.30F : (index < 3 ? 0.62F : 0.88F);
         poseStack.pushPose();
-        poseStack.translate(x + horizontalDrift, y, z);
-        poseStack.mulPose(Axis.YP.rotationDegrees(yaw + yawDrift));
+        poseStack.translate(x + horizontalDrift + follow.x * followStrength,
+                y + follow.y * followStrength, z + follow.z * followStrength);
+        poseStack.mulPose(Axis.YP.rotationDegrees(yaw + yawDrift
+                + follow.yaw * followStrength));
         poseStack.mulPose(Axis.ZP.rotationDegrees(rollDrift));
 
         float edgeVisibility = 0.16F + view.edge * 0.84F;
@@ -163,11 +169,13 @@ public final class ObserverArrayRenderer implements ICurioRenderer {
     }
 
     private static void renderFocusRings(PoseStack poseStack, VertexConsumer film,
-                                         float time, ViewFactors view, float focus) {
+                                         float time, ViewFactors view,
+                                         FollowMotion follow, float focus) {
         poseStack.pushPose();
-        poseStack.translate(view.side * 0.07F,
-                -0.07F + Mth.sin(time * 0.035F) * 0.025F,
-                0.13F);
+        poseStack.translate(view.side * 0.07F + follow.x * 0.48F,
+                -0.07F + Mth.sin(time * 0.035F) * 0.025F + follow.y * 0.48F,
+                0.13F + follow.z * 0.48F);
+        poseStack.mulPose(Axis.YP.rotationDegrees(follow.yaw * 0.48F));
         poseStack.mulPose(Axis.ZP.rotationDegrees(time * 0.24F));
         int color = filmColor(time, 0.42F + view.side * 0.12F);
         segmentedRing(film, poseStack.last().pose(), 0.43F,
@@ -176,7 +184,9 @@ public final class ObserverArrayRenderer implements ICurioRenderer {
         poseStack.popPose();
 
         poseStack.pushPose();
-        poseStack.translate(-view.side * 0.045F, -0.07F, 0.17F);
+        poseStack.translate(-view.side * 0.045F + follow.x * 0.68F,
+                -0.07F + follow.y * 0.68F, 0.17F + follow.z * 0.68F);
+        poseStack.mulPose(Axis.YP.rotationDegrees(follow.yaw * 0.68F));
         poseStack.mulPose(Axis.ZP.rotationDegrees(-time * 0.17F + 11.0F));
         int inverse = filmColor(time, 0.76F - view.side * 0.09F);
         segmentedRing(film, poseStack.last().pose(), 0.29F,
@@ -187,7 +197,8 @@ public final class ObserverArrayRenderer implements ICurioRenderer {
 
     private static void renderFragments(PoseStack poseStack, VertexConsumer glass,
                                         VertexConsumer film, float time,
-                                        ViewFactors view, float focus) {
+                                        ViewFactors view, FollowMotion follow,
+                                        float focus) {
         for (int i = 0; i < 22; i++) {
             float x;
             float y;
@@ -208,9 +219,12 @@ public final class ObserverArrayRenderer implements ICurioRenderer {
                     * (0.024F + (i % 3) * 0.008F);
             float z = -0.07F + (i % 5) * 0.035F;
             int color = filmColor(time, i * 0.083F + view.side * 0.1F);
+            float followStrength = 0.72F + (i % 6) * 0.065F;
 
             poseStack.pushPose();
-            poseStack.translate(x, y, z);
+            poseStack.translate(x + follow.x * followStrength,
+                    y + follow.y * followStrength, z + follow.z * followStrength);
+            poseStack.mulPose(Axis.YP.rotationDegrees(follow.yaw * followStrength));
             poseStack.mulPose(Axis.ZP.rotationDegrees(i * 37.0F
                     + time * (0.18F + (i % 6) * 0.055F)));
             float size = fragmentSize(i);
@@ -249,6 +263,60 @@ public final class ObserverArrayRenderer implements ICurioRenderer {
         }
         float linear = 1.0F - elapsed / FOCUS_DURATION;
         return linear * linear * (3.0F - 2.0F * linear);
+    }
+
+    private static FollowMotion followMotion(LivingEntity wearer, float partialTicks) {
+        double currentX = Mth.lerp(partialTicks, wearer.xOld, wearer.getX());
+        double currentY = Mth.lerp(partialTicks, wearer.yOld, wearer.getY());
+        double currentZ = Mth.lerp(partialTicks, wearer.zOld, wearer.getZ());
+        Vec3 currentPosition = new Vec3(currentX, currentY, currentZ);
+        float currentYaw = Mth.rotLerp(partialTicks, wearer.yBodyRotO, wearer.yBodyRot);
+        float time = wearer.tickCount + partialTicks;
+
+        FollowState state = FOLLOW_STATES.computeIfAbsent(wearer.getUUID(),
+                ignored -> new FollowState(currentPosition, currentYaw, time));
+        float deltaTicks = time - state.lastTime;
+        if (deltaTicks < 0.0F || deltaTicks > 3.0F
+                || state.anchor.distanceToSqr(currentPosition) > 64.0D) {
+            state.snap(currentPosition, currentYaw, time);
+            return FollowMotion.ZERO;
+        }
+
+        if (deltaTicks > 0.0F) {
+            double positionDamping = Math.pow(0.68D, deltaTicks);
+            Vec3 acceleration = currentPosition.subtract(state.anchor)
+                    .scale(0.20D * deltaTicks);
+            state.velocity = state.velocity.add(acceleration).scale(positionDamping);
+            state.anchor = state.anchor.add(state.velocity.scale(deltaTicks));
+
+            float yawError = Mth.wrapDegrees(currentYaw - state.yaw);
+            float yawDamping = (float) Math.pow(0.65D, deltaTicks);
+            state.yawVelocity = (state.yawVelocity + yawError * 0.16F * deltaTicks)
+                    * yawDamping;
+            state.yaw += state.yawVelocity * deltaTicks;
+            state.lastTime = time;
+        }
+
+        Vec3 worldOffset = state.anchor.subtract(currentPosition);
+        double horizontal = Math.sqrt(worldOffset.x * worldOffset.x
+                + worldOffset.z * worldOffset.z);
+        if (horizontal > 0.46D) {
+            double scale = 0.46D / horizontal;
+            worldOffset = new Vec3(worldOffset.x * scale, worldOffset.y,
+                    worldOffset.z * scale);
+        }
+
+        float bodyYaw = currentYaw * DEG_TO_RAD;
+        double rightX = Mth.cos(bodyYaw);
+        double rightZ = Mth.sin(bodyYaw);
+        double forwardX = -Mth.sin(bodyYaw);
+        double forwardZ = Mth.cos(bodyYaw);
+        float localX = (float) (worldOffset.x * rightX + worldOffset.z * rightZ);
+        float localY = (float) -Mth.clamp(worldOffset.y, -0.28D, 0.28D);
+        float localZ = (float) -(worldOffset.x * forwardX + worldOffset.z * forwardZ);
+        float localYaw = -Mth.clamp(Mth.wrapDegrees(state.yaw - currentYaw),
+                -18.0F, 18.0F);
+        return new FollowMotion(localX, localY, localZ, localYaw);
     }
 
     private static ViewFactors viewFactors(LivingEntity wearer, float partialTicks) {
@@ -358,5 +426,31 @@ public final class ObserverArrayRenderer implements ICurioRenderer {
     }
 
     private record ViewFactors(float side, float vertical, float edge) {
+    }
+
+    private record FollowMotion(float x, float y, float z, float yaw) {
+        private static final FollowMotion ZERO = new FollowMotion(0.0F, 0.0F, 0.0F, 0.0F);
+    }
+
+    private static final class FollowState {
+        private Vec3 anchor;
+        private Vec3 velocity = Vec3.ZERO;
+        private float yaw;
+        private float yawVelocity;
+        private float lastTime;
+
+        private FollowState(Vec3 anchor, float yaw, float lastTime) {
+            this.anchor = anchor;
+            this.yaw = yaw;
+            this.lastTime = lastTime;
+        }
+
+        private void snap(Vec3 position, float bodyYaw, float time) {
+            anchor = position;
+            velocity = Vec3.ZERO;
+            yaw = bodyYaw;
+            yawVelocity = 0.0F;
+            lastTime = time;
+        }
     }
 }
