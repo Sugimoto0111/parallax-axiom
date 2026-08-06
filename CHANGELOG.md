@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.15.2
+
+- Render the four signature tooltip lines glyph by glyph instead of moving each line as one rigid unit
+- Wave every character vertically with line-specific amplitude, speed and phase
+- Add a delayed dark refraction echo behind the title while its main glyphs drift horizontally
+- Keep vanilla rendering for every unrelated tooltip component
+
 ## 0.15.1
 
 - Flow an animated thin-film gradient across the item title one character at a time

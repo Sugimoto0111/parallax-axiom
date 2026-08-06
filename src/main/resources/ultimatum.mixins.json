@@ -24,6 +24,9 @@
     "compat.TrialEntityHelperMixin",
     "compat.Pig2AttackMixin"
   ],
+  "client": [
+    "accessor.ClientTextTooltipAccessor"
+  ],
   "injectors": {
     "defaultRequire": 1
   }

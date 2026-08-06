@@ -3,14 +3,18 @@ package dev.srryo.ultimatum.client;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.datafixers.util.Either;
 import dev.srryo.ultimatum.UltimatumMod;
+import dev.srryo.ultimatum.mixin.accessor.ClientTextTooltipAccessor;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTextTooltip;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.inventory.tooltip.TooltipComponent;
@@ -159,16 +163,16 @@ public final class ClientParallaxTooltip {
         int componentY = textY;
         for (int index = 0; index < components.size(); index++) {
             ClientTooltipComponent component = components.get(index);
-            float linePhase = now * 0.00115F + index * 1.73F;
-            float textDriftX = index < 4 ? Mth.sin(linePhase) *
-                    (index == 0 ? 0.85F : 0.48F) : 0.0F;
-            float textDriftY = index < 4 ? Mth.cos(linePhase * 0.73F) *
-                    (index == 0 ? 0.42F : 0.22F) : 0.0F;
-            poseStack.pushPose();
-            poseStack.translate(textDriftX, textDriftY, 0.0F);
-            component.renderText(font, textX, componentY, poseStack.last().pose(),
-                    graphics.bufferSource());
-            poseStack.popPose();
+            if (index < 4 && component instanceof ClientTextTooltip textTooltip) {
+                renderAnimatedGlyphs(font,
+                        ((ClientTextTooltipAccessor) (Object) textTooltip)
+                                .ultimatum$getText(),
+                        textX, componentY, index, now, poseStack,
+                        graphics.bufferSource());
+            } else {
+                component.renderText(font, textX, componentY,
+                        poseStack.last().pose(), graphics.bufferSource());
+            }
             componentY += component.getHeight() + (index == 0 ? 2 : 0);
         }
         graphics.flush();
@@ -180,6 +184,53 @@ public final class ClientParallaxTooltip {
             componentY += component.getHeight() + (index == 0 ? 2 : 0);
         }
         poseStack.popPose();
+    }
+
+    private static void renderAnimatedGlyphs(Font font,
+                                             FormattedCharSequence sequence,
+                                             float startX, float startY,
+                                             int line, long now,
+                                             PoseStack poseStack,
+                                             MultiBufferSource.BufferSource buffers) {
+        float[] cursorX = {startX};
+        int[] glyphIndex = {0};
+        float amplitude = switch (line) {
+            case 0 -> 1.35F;
+            case 1, 2 -> 0.82F;
+            default -> 0.62F;
+        };
+        float speed = line == 0 ? 0.0052F : 0.0042F;
+        float phaseStep = line == 0 ? 0.68F : 0.52F;
+
+        sequence.accept((ignoredIndex, style, codePoint) -> {
+            int currentGlyph = glyphIndex[0]++;
+            float phase = now * speed + currentGlyph * phaseStep + line * 1.37F;
+            float waveY = Mth.sin(phase) * amplitude;
+            float refractX = Mth.cos(phase * 0.71F) *
+                    (line == 0 ? 0.42F : 0.18F);
+            String character = new String(Character.toChars(codePoint));
+            FormattedCharSequence glyph = FormattedCharSequence.forward(character, style);
+
+            if (line == 0 && !Character.isWhitespace(codePoint)) {
+                int sourceColor = style.getColor() == null
+                        ? 0xDDE7F0 : style.getColor().getValue();
+                Style echoStyle = style.withColor(TextColor.fromRgb(
+                        mixRgb(0x05070A, sourceColor, 0.30F)));
+                FormattedCharSequence echo = FormattedCharSequence.forward(
+                        character, echoStyle);
+                float echoX = cursorX[0] - refractX * 1.45F;
+                float echoY = startY - waveY * 0.48F + 0.7F;
+                font.drawInBatch(echo, echoX, echoY, -1, false,
+                        poseStack.last().pose(), buffers, Font.DisplayMode.NORMAL,
+                        0, 15728880);
+            }
+
+            font.drawInBatch(glyph, cursorX[0] + refractX, startY + waveY,
+                    -1, true, poseStack.last().pose(), buffers,
+                    Font.DisplayMode.NORMAL, 0, 15728880);
+            cursorX[0] += font.width(glyph);
+            return true;
+        });
     }
 
     private static FormattedText animateText(FormattedText source, int line,
