@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.14.0
+
+- Adopt Parallax Axiom as the public mod name while preserving the ultimatum namespace for compatibility
+- Rename Absolute End to Final Conclusion and Absolute Artifact to Invariant Observer
+- Replace technical item descriptions with compact two-line observation lore in Japanese and English
+- Show one concise functional explanation only while Shift is held
+- Rename the keybind category and controls without changing existing bindings
+
 ## 0.13.3
 
 - Enlarge the outer incomplete focus ring from 0.43 to 0.69 blocks in local radius

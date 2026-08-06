@@ -5,6 +5,7 @@ import com.google.common.collect.Multimap;
 import dev.srryo.ultimatum.UltimatumMod;
 import dev.srryo.ultimatum.invincibility.InvincibilityService;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -99,8 +100,17 @@ public final class AbsoluteArtifactItem extends Item implements ICurioItem {
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip,
                                 TooltipFlag flag) {
-        tooltip.add(Component.translatable("item.ultimatum.absolute_artifact.desc")
-                .withStyle(ChatFormatting.GOLD));
+        tooltip.add(Component.translatable("item.ultimatum.absolute_artifact.lore.1")
+                .withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
+        tooltip.add(Component.translatable("item.ultimatum.absolute_artifact.lore.2")
+                .withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
+        if (Screen.hasShiftDown()) {
+            tooltip.add(Component.translatable("item.ultimatum.absolute_artifact.detail")
+                    .withStyle(ChatFormatting.DARK_AQUA));
+        } else {
+            tooltip.add(Component.translatable("tooltip.ultimatum.hold_shift")
+                    .withStyle(ChatFormatting.DARK_GRAY));
+        }
     }
 
     @Override

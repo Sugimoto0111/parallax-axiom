@@ -2,6 +2,7 @@ package dev.srryo.ultimatum.item;
 
 import dev.srryo.ultimatum.UltimatumMod;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -51,10 +52,17 @@ public final class AbsoluteEndItem extends SwordItem {
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip,
                                 TooltipFlag flag) {
-        tooltip.add(Component.translatable("item.ultimatum.absolute_end.desc")
-                .withStyle(ChatFormatting.DARK_RED));
-        tooltip.add(Component.translatable("item.ultimatum.absolute_end.artifact_required")
-                .withStyle(ChatFormatting.GOLD));
+        tooltip.add(Component.translatable("item.ultimatum.absolute_end.lore.1")
+                .withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
+        tooltip.add(Component.translatable("item.ultimatum.absolute_end.lore.2")
+                .withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
+        if (Screen.hasShiftDown()) {
+            tooltip.add(Component.translatable("item.ultimatum.absolute_end.detail")
+                    .withStyle(ChatFormatting.DARK_AQUA));
+        } else {
+            tooltip.add(Component.translatable("tooltip.ultimatum.hold_shift")
+                    .withStyle(ChatFormatting.DARK_GRAY));
+        }
     }
 
     @Override
