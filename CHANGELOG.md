@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.1
+
+- Resolve at most one server-authoritative look target during each Final Conclusion swing
+- Mark a normal direct attack as that swing's selected target so fallback scanning cannot acquire another mob
+- Detect rapid animation restarts while preserving unpickable-mob targeting and the vanilla inventory-tick fallback
+
 ## 0.14.0
 
 - Adopt Parallax Axiom as the public mod name while preserving the ultimatum namespace for compatibility

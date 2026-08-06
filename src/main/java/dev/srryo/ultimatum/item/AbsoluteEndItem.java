@@ -26,14 +26,14 @@ public final class AbsoluteEndItem extends SwordItem {
         if (player.level().isClientSide) {
             return false;
         }
-        UltimatumMod.KILL_SERVICE.enqueue(player, entity);
+        UltimatumMod.KILL_SERVICE.enqueueDirectAttack(player, entity);
         return true;
     }
 
     @Override
     public boolean hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
         if (!attacker.level().isClientSide && attacker instanceof Player player) {
-            UltimatumMod.KILL_SERVICE.enqueue(player, target);
+            UltimatumMod.KILL_SERVICE.enqueueDirectAttack(player, target);
         }
         return true;
     }
@@ -41,11 +41,9 @@ public final class AbsoluteEndItem extends SwordItem {
     @Override
     public void inventoryTick(ItemStack stack, Level level, Entity entity, int slot, boolean selected) {
         super.inventoryTick(stack, level, entity, slot, selected);
-        if (!level.isClientSide && entity instanceof Player player
-                && player.swinging
-                && (player.getMainHandItem() == stack || player.getOffhandItem() == stack)) {
+        if (!level.isClientSide && entity instanceof Player player) {
             // This vanilla item hook still runs after Omni-Mobs replaces Forge's EVENT_BUS.
-            UltimatumMod.KILL_SERVICE.onAbsoluteEndSwing(player);
+            UltimatumMod.KILL_SERVICE.onAbsoluteEndHeldTick(player);
         }
     }
 

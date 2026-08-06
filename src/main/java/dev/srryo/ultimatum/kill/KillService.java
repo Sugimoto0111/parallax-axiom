@@ -35,7 +35,7 @@ public final class KillService {
     private final GenericDeathKernel genericDeathKernel = new GenericDeathKernel();
     private final Map<Long, Queue<Object>> pig2Resets = new ConcurrentHashMap<>();
     private final Map<Long, Queue<Runnable>> deferredTasks = new ConcurrentHashMap<>();
-    private final Map<UUID, Long> specialSwingTicks = new ConcurrentHashMap<>();
+    private final Map<UUID, SwingCapture> specialSwings = new ConcurrentHashMap<>();
     private final java.util.Set<UUID> pendingExecutions = ConcurrentHashMap.newKeySet();
     private MinecraftServer lastProcessedServer;
     private int lastProcessedServerTick = Integer.MIN_VALUE;
@@ -51,6 +51,12 @@ public final class KillService {
         }
         requests.add(new KillRequest(target.level().dimension(), target.getUUID(), target.getId(),
                 attacker.getUUID(), new WeakReference<>(target)));
+    }
+
+    /** Records a real attack target and prevents the same swing's fallback scan. */
+    public void enqueueDirectAttack(Player attacker, Entity target) {
+        markCurrentSwingHandled(attacker);
+        enqueue(attacker, target);
     }
 
     public void enqueue(Entity target) {
@@ -128,25 +134,49 @@ public final class KillService {
 
     @SubscribeEvent
     public void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player)
-                || !player.swinging || !isHoldingAbsoluteEnd(player)) {
+        if (event.phase != TickEvent.Phase.END
+                || !(event.player instanceof ServerPlayer player)) {
             return;
         }
-        onAbsoluteEndSwing(player);
+        onAbsoluteEndHeldTick(player);
     }
 
-    public void onAbsoluteEndSwing(Player player) {
-        if (!(player instanceof ServerPlayer serverPlayer) || !isHoldingAbsoluteEnd(player)) {
+    public void onAbsoluteEndHeldTick(Player player) {
+        if (!(player instanceof ServerPlayer serverPlayer)) {
             return;
         }
-        long now = serverPlayer.getServer().getTickCount();
-        long previous = specialSwingTicks.getOrDefault(serverPlayer.getUUID(), Long.MIN_VALUE / 2);
-        if (now - previous < 4) {
+        UUID playerId = serverPlayer.getUUID();
+        if (!isHoldingAbsoluteEnd(player) || !player.swinging) {
+            specialSwings.remove(playerId);
             return;
         }
-        specialSwingTicks.put(serverPlayer.getUUID(), now);
+
+        int swingTime = player.swingTime;
+        SwingCapture capture = specialSwings.computeIfAbsent(playerId,
+                ignored -> new SwingCapture(swingTime));
+        // A rapidly repeated attack can restart the animation without exposing an
+        // intervening non-swinging tick. A lower animation time still identifies it
+        // as a new swing and permits exactly one new target acquisition.
+        if (swingTime < capture.lastSwingTime) {
+            capture.handled = false;
+        }
+        capture.lastSwingTime = swingTime;
+        if (capture.handled) {
+            return;
+        }
+        capture.handled = true;
         eraseSpecialLookTarget(serverPlayer,
                 UltimatumMod.ARTIFACT_REACH_SERVICE.reach(serverPlayer));
+    }
+
+    private void markCurrentSwingHandled(Player player) {
+        if (!(player instanceof ServerPlayer serverPlayer)) {
+            return;
+        }
+        SwingCapture capture = specialSwings.computeIfAbsent(serverPlayer.getUUID(),
+                ignored -> new SwingCapture(player.swingTime));
+        capture.lastSwingTime = player.swingTime;
+        capture.handled = true;
     }
 
     public boolean eraseSpecialLookTarget(Player player, double reach) {
@@ -176,6 +206,15 @@ public final class KillService {
         return UltimatumMod.ABSOLUTE_END.isPresent()
                 && (player.getMainHandItem().is(UltimatumMod.ABSOLUTE_END.get())
                 || player.getOffhandItem().is(UltimatumMod.ABSOLUTE_END.get()));
+    }
+
+    private static final class SwingCapture {
+        private int lastSwingTime;
+        private boolean handled;
+
+        private SwingCapture(int lastSwingTime) {
+            this.lastSwingTime = lastSwingTime;
+        }
     }
 
     @SubscribeEvent
