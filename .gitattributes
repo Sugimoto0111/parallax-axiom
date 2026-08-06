@@ -1,0 +1,15 @@
+* text=auto
+*.java text eol=lf
+*.gradle text eol=lf
+*.properties text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.toml text eol=lf
+*.snbt text eol=lf
+gradlew text eol=lf
+*.bat text eol=crlf
+*.jar binary
+
+# Generated data files always use LF.
+src/generated/**/.cache/cache text eol=lf
+src/generated/**/*.json text eol=lf

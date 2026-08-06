@@ -1,0 +1,26 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.srryo.ultimatum.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "ultimatum.refmap.json",
+  "mixins": [
+    "EntityInvincibilityMixin",
+    "LivingEntityInvincibilityMixin",
+    "MinecraftServerTickMixin",
+    "PersistentEntitySectionManagerMixin",
+    "PlayerInvincibilityMixin",
+    "accessor.LivingEntityDeathAccessor",
+    "accessor.SynchedEntityDataAccessor",
+    "accessor.SynchedEntityDataItemAccessor",
+    "compat.OmniEntityUtilMixin",
+    "compat.OmniFlashfurAttackMixin",
+    "compat.OmniMetapotentAttackMixin",
+    "compat.OmniRemovalUtilMixin",
+    "compat.TrialEntityHelperMixin",
+    "compat.Pig2AttackMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
