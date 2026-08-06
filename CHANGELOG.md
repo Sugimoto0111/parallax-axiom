@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.3
+
+- Enlarge the outer incomplete focus ring from 0.43 to 0.69 blocks in local radius
+- Enlarge the inner ring from 0.29 to 0.45 blocks and increase segment detail
+- Thicken both ring films slightly so the expanded outlines remain legible
+
 ## 0.13.2
 
 - Reduce maximum visible follow separation from roughly 1.5 blocks to one block

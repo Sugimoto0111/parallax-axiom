@@ -179,8 +179,8 @@ public final class ObserverArrayRenderer implements ICurioRenderer {
         poseStack.mulPose(Axis.YP.rotationDegrees(follow.yaw));
         poseStack.mulPose(Axis.ZP.rotationDegrees(time * 0.24F));
         int color = filmColor(time, 0.42F + view.side * 0.12F);
-        segmentedRing(film, poseStack.last().pose(), 0.43F,
-                0.014F + focus * 0.012F, 28, 5,
+        segmentedRing(film, poseStack.last().pose(), 0.69F,
+                0.019F + focus * 0.014F, 36, 6,
                 red(color), green(color), blue(color), 54 + (int) (focus * 110));
         poseStack.popPose();
 
@@ -191,8 +191,8 @@ public final class ObserverArrayRenderer implements ICurioRenderer {
         poseStack.mulPose(Axis.YP.rotationDegrees(follow.yaw));
         poseStack.mulPose(Axis.ZP.rotationDegrees(-time * 0.17F + 11.0F));
         int inverse = filmColor(time, 0.76F - view.side * 0.09F);
-        segmentedRing(film, poseStack.last().pose(), 0.29F,
-                0.009F + focus * 0.008F, 24, 4,
+        segmentedRing(film, poseStack.last().pose(), 0.45F,
+                0.013F + focus * 0.010F, 30, 5,
                 red(inverse), green(inverse), blue(inverse), 42 + (int) (focus * 105));
         poseStack.popPose();
     }
