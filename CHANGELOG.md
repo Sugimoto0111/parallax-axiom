@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.15.3
+
+- Increase title motion to a clearly visible three-pixel per-glyph wave and lore motion to nearly two pixels
+- Stretch each glyph vertically as the wave passes instead of only translating its baseline
+- Split the title's delayed refraction into independently displaced cyan and magenta echoes
+- Log the first activation of the custom glyph renderer so runtime use can be verified directly
+
 ## 0.15.2
 
 - Render the four signature tooltip lines glyph by glyph instead of moving each line as one rigid unit

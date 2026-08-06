@@ -23,6 +23,7 @@ import net.minecraftforge.client.event.RenderTooltipEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import org.joml.Matrix4f;
 import org.joml.Vector2ic;
 
 import java.util.List;
@@ -38,6 +39,7 @@ import java.util.ListIterator;
 public final class ClientParallaxTooltip {
     private static final int CONTENT_PADDING = 7;
     private static final int FRAME_DEPTH = 500;
+    private static boolean reportedGlyphRenderer;
 
     private ClientParallaxTooltip() {
     }
@@ -192,45 +194,72 @@ public final class ClientParallaxTooltip {
                                              int line, long now,
                                              PoseStack poseStack,
                                              MultiBufferSource.BufferSource buffers) {
+        if (!reportedGlyphRenderer) {
+            reportedGlyphRenderer = true;
+            UltimatumMod.LOGGER.info("Parallax glyph animation renderer is active");
+        }
         float[] cursorX = {startX};
         int[] glyphIndex = {0};
         float amplitude = switch (line) {
-            case 0 -> 1.35F;
-            case 1, 2 -> 0.82F;
-            default -> 0.62F;
+            case 0 -> 3.0F;
+            case 1, 2 -> 1.85F;
+            default -> 1.35F;
         };
-        float speed = line == 0 ? 0.0052F : 0.0042F;
-        float phaseStep = line == 0 ? 0.68F : 0.52F;
+        float speed = line == 0 ? 0.0044F : 0.0037F;
+        float phaseStep = line == 0 ? 0.72F : 0.58F;
 
         sequence.accept((ignoredIndex, style, codePoint) -> {
             int currentGlyph = glyphIndex[0]++;
             float phase = now * speed + currentGlyph * phaseStep + line * 1.37F;
             float waveY = Mth.sin(phase) * amplitude;
             float refractX = Mth.cos(phase * 0.71F) *
-                    (line == 0 ? 0.42F : 0.18F);
+                    (line == 0 ? 0.95F : 0.38F);
             String character = new String(Character.toChars(codePoint));
             FormattedCharSequence glyph = FormattedCharSequence.forward(character, style);
+            int glyphWidth = font.width(glyph);
+            float verticalScale = 1.0F + Mth.cos(phase - 0.55F) *
+                    (line == 0 ? 0.15F : 0.07F);
+            Matrix4f glyphPose = scaledGlyphPose(poseStack, cursorX[0], startY,
+                    glyphWidth, verticalScale);
 
             if (line == 0 && !Character.isWhitespace(codePoint)) {
                 int sourceColor = style.getColor() == null
                         ? 0xDDE7F0 : style.getColor().getValue();
-                Style echoStyle = style.withColor(TextColor.fromRgb(
-                        mixRgb(0x05070A, sourceColor, 0.30F)));
-                FormattedCharSequence echo = FormattedCharSequence.forward(
-                        character, echoStyle);
-                float echoX = cursorX[0] - refractX * 1.45F;
-                float echoY = startY - waveY * 0.48F + 0.7F;
-                font.drawInBatch(echo, echoX, echoY, -1, false,
-                        poseStack.last().pose(), buffers, Font.DisplayMode.NORMAL,
+                Style cyanEchoStyle = style.withColor(TextColor.fromRgb(
+                        mixRgb(0x031016, sourceColor, 0.38F)));
+                Style magentaEchoStyle = style.withColor(TextColor.fromRgb(
+                        mixRgb(0x140713, sourceColor, 0.32F)));
+                FormattedCharSequence cyanEcho = FormattedCharSequence.forward(
+                        character, cyanEchoStyle);
+                FormattedCharSequence magentaEcho = FormattedCharSequence.forward(
+                        character, magentaEchoStyle);
+                float echoY = startY - waveY * 0.60F + 0.7F;
+                font.drawInBatch(cyanEcho, cursorX[0] - 1.25F - refractX,
+                        echoY, -1, false, glyphPose, buffers,
+                        Font.DisplayMode.NORMAL, 0, 15728880);
+                font.drawInBatch(magentaEcho, cursorX[0] + 1.25F - refractX,
+                        echoY + 0.35F, -1, false, glyphPose, buffers,
+                        Font.DisplayMode.NORMAL,
                         0, 15728880);
             }
 
             font.drawInBatch(glyph, cursorX[0] + refractX, startY + waveY,
-                    -1, true, poseStack.last().pose(), buffers,
+                    -1, true, glyphPose, buffers,
                     Font.DisplayMode.NORMAL, 0, 15728880);
-            cursorX[0] += font.width(glyph);
+            cursorX[0] += glyphWidth;
             return true;
         });
+    }
+
+    private static Matrix4f scaledGlyphPose(PoseStack poseStack, float glyphX,
+                                            float glyphY, float glyphWidth,
+                                            float verticalScale) {
+        float pivotX = glyphX + glyphWidth * 0.5F;
+        float pivotY = glyphY + 4.0F;
+        return new Matrix4f(poseStack.last().pose())
+                .translate(pivotX, pivotY, 0.0F)
+                .scale(1.0F, verticalScale, 1.0F)
+                .translate(-pivotX, -pivotY, 0.0F);
     }
 
     private static FormattedText animateText(FormattedText source, int line,
