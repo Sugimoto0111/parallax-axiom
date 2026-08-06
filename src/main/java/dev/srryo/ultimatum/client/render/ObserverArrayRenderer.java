@@ -189,11 +189,19 @@ public final class ObserverArrayRenderer implements ICurioRenderer {
                                         VertexConsumer film, float time,
                                         ViewFactors view, float focus) {
         for (int i = 0; i < 22; i++) {
-            float side = (i % 2 == 0) ? -1.0F : 1.0F;
-            float distance = 0.52F + ((i * 5) % 9) * 0.075F
-                    + (i >= 14 ? 0.07F : 0.0F);
-            float x = side * distance;
-            float y = -0.64F + ((i * 7) % 13) * 0.105F;
+            float x;
+            float y;
+            if (i < 18) {
+                float side = (i % 2 == 0) ? -1.0F : 1.0F;
+                float distance = 0.98F + ((i * 5) % 6) * 0.08F;
+                x = side * distance;
+                y = -0.66F + ((i * 7) % 12) * 0.12F;
+            } else {
+                int cap = i - 18;
+                x = (cap % 2 == 0 ? -1.0F : 1.0F)
+                        * (0.30F + (cap / 2) * 0.18F);
+                y = cap < 2 ? -0.84F : 0.78F;
+            }
             x += Mth.sin(time * (0.031F + i * 0.0015F) + i * 1.71F)
                     * (0.028F + (i % 4) * 0.008F);
             y += Mth.cos(time * (0.032F + (i % 5) * 0.0018F) + i * 0.83F)

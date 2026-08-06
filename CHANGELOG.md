@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.5
+
+- Move 18 film fragments into loose bands beyond the left and right pane edges
+- Place the remaining four fragments above and below the pane group
+- Clear the center so fragment silhouettes no longer obscure the layered glass design
+
 ## 0.12.4
 
 - Expand the observer array from 10 to 22 independently drifting film fragments
