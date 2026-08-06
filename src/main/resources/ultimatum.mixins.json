@@ -25,7 +25,8 @@
     "compat.Pig2AttackMixin"
   ],
   "client": [
-    "accessor.ClientTextTooltipAccessor"
+    "accessor.ClientTextTooltipAccessor",
+    "accessor.GuiSelectedItemAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.16.0
+
+- Replace the vanilla selected-item-name HUD for Final Conclusion and Invariant Observer only
+- Reuse the animated per-glyph thin-film wave and restrained refraction echoes above the hotbar
+- Add a compact fading black-mirror strip with animated film edges and displaced corner brackets
+- Preserve vanilla highlight duration, fade timing, HUD-height adjustment and all other items' rendering
+
 ## 0.15.4
 
 - Normalize epoch milliseconds into a short float-safe time window before calculating tooltip animation phases

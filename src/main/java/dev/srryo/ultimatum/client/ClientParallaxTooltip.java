@@ -4,7 +4,11 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.datafixers.util.Either;
 import dev.srryo.ultimatum.UltimatumMod;
 import dev.srryo.ultimatum.mixin.accessor.ClientTextTooltipAccessor;
+import dev.srryo.ultimatum.mixin.accessor.GuiSelectedItemAccessor;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTextTooltip;
@@ -20,6 +24,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderTooltipEvent;
+import net.minecraftforge.client.event.RenderGuiOverlayEvent;
+import net.minecraftforge.client.gui.overlay.ForgeGui;
+import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -73,6 +80,27 @@ public final class ClientParallaxTooltip {
         }
         event.setCanceled(true);
         render(event);
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onSelectedItemName(RenderGuiOverlayEvent.Pre event) {
+        if (event.getOverlay() != VanillaGuiOverlay.ITEM_NAME.type()) {
+            return;
+        }
+
+        Minecraft minecraft = Minecraft.getInstance();
+        Gui gui = minecraft.gui;
+        GuiSelectedItemAccessor access = (GuiSelectedItemAccessor) (Object) gui;
+        ItemStack stack = access.ultimatum$getLastToolHighlight();
+        int timer = access.ultimatum$getToolHighlightTimer();
+        if (timer <= 0 || !isParallaxItem(stack)) {
+            return;
+        }
+
+        event.setCanceled(true);
+        renderSelectedItemName(event.getGuiGraphics(), minecraft, gui, stack,
+                timer, event.getWindow().getGuiScaledWidth(),
+                event.getWindow().getGuiScaledHeight());
     }
 
     private static boolean isParallaxItem(ItemStack stack) {
@@ -170,8 +198,8 @@ public final class ClientParallaxTooltip {
                 renderAnimatedGlyphs(font,
                         ((ClientTextTooltipAccessor) (Object) textTooltip)
                                 .ultimatum$getText(),
-                        textX, componentY, index, timeSeconds, poseStack,
-                        graphics.bufferSource());
+                        textX, componentY, index, timeSeconds, 1.0F, 255,
+                        poseStack, graphics.bufferSource());
             } else {
                 component.renderText(font, textX, componentY,
                         poseStack.last().pose(), graphics.bufferSource());
@@ -189,10 +217,83 @@ public final class ClientParallaxTooltip {
         poseStack.popPose();
     }
 
+    private static void renderSelectedItemName(GuiGraphics graphics,
+                                               Minecraft minecraft, Gui gui,
+                                               ItemStack stack, int timer,
+                                               int screenWidth,
+                                               int screenHeight) {
+        MutableComponent vanillaName = Component.empty()
+                .append(stack.getHoverName())
+                .withStyle(stack.getRarity().getStyleModifier());
+        if (stack.hasCustomHoverName()) {
+            vanillaName.withStyle(ChatFormatting.ITALIC);
+        }
+        Component highlightName = stack.getHighlightTip(vanillaName);
+        Component animatedName = animateText(highlightName, 0,
+                System.currentTimeMillis());
+        FormattedCharSequence sequence = animatedName.getVisualOrderText();
+        Font font = minecraft.font;
+        int width = font.width(sequence);
+        int x = (screenWidth - width) / 2;
+        int occupiedHeight = gui instanceof ForgeGui forgeGui
+                ? Math.max(forgeGui.leftHeight, forgeGui.rightHeight) : 0;
+        int y = screenHeight - Math.max(occupiedHeight, 59);
+        if (minecraft.gameMode != null && !minecraft.gameMode.canHurtPlayer()) {
+            y += 14;
+        }
+
+        int alpha = Mth.clamp(timer * 256 / 10, 0, 255);
+        if (alpha <= 0) {
+            return;
+        }
+        float timeSeconds = animationSeconds(System.currentTimeMillis());
+        float hue = Mth.positiveModulo(timeSeconds / 7.2F, 1.0F);
+        int filmA = Mth.hsvToRgb(hue, 0.40F, 1.0F);
+        int filmB = Mth.hsvToRgb(Mth.positiveModulo(hue + 0.28F, 1.0F),
+                0.44F, 0.92F);
+        int left = x - 7;
+        int right = x + width + 7;
+        int top = y - 5;
+        int bottom = y + 13;
+
+        PoseStack poseStack = graphics.pose();
+        poseStack.pushPose();
+        poseStack.translate(0.0F, 0.0F, FRAME_DEPTH);
+        graphics.fill(left - 3, top - 2, right + 3, bottom + 2,
+                withAlpha(0x000000, alpha * 45 / 255));
+        graphics.fillGradient(left, top, right, bottom,
+                withAlpha(0x091019, alpha * 184 / 255),
+                withAlpha(0x020406, alpha * 205 / 255));
+        graphics.fillGradient(left, top, right, top + 1,
+                withAlpha(filmA, alpha * 190 / 255),
+                withAlpha(filmB, alpha * 115 / 255));
+        graphics.fillGradient(left, bottom - 1, right, bottom,
+                withAlpha(filmB, alpha * 80 / 255),
+                withAlpha(filmA, alpha * 160 / 255));
+        drawHudBrackets(graphics, left, top, right, bottom,
+                withAlpha(filmA, alpha * 170 / 255),
+                withAlpha(filmB, alpha * 135 / 255));
+
+        renderAnimatedGlyphs(font, sequence, x, y, 0, timeSeconds,
+                0.82F, alpha, poseStack, graphics.bufferSource());
+        graphics.flush();
+        poseStack.popPose();
+    }
+
+    private static void drawHudBrackets(GuiGraphics graphics, int left, int top,
+                                        int right, int bottom, int leftColor,
+                                        int rightColor) {
+        graphics.fill(left - 3, top + 2, left + 2, top + 3, leftColor);
+        graphics.fill(left - 3, top + 2, left - 2, bottom - 2, leftColor);
+        graphics.fill(right - 2, bottom - 3, right + 3, bottom - 2, rightColor);
+        graphics.fill(right + 2, top + 2, right + 3, bottom - 2, rightColor);
+    }
+
     private static void renderAnimatedGlyphs(Font font,
                                              FormattedCharSequence sequence,
                                              float startX, float startY,
                                              int line, float timeSeconds,
+                                             float motionScale, int alpha,
                                              PoseStack poseStack,
                                              MultiBufferSource.BufferSource buffers) {
         if (!reportedGlyphRenderer) {
@@ -205,7 +306,7 @@ public final class ClientParallaxTooltip {
             case 0 -> 3.0F;
             case 1, 2 -> 1.85F;
             default -> 1.35F;
-        };
+        } * motionScale;
         float speed = line == 0 ? 4.4F : 3.7F;
         float phaseStep = line == 0 ? 0.72F : 0.58F;
 
@@ -215,12 +316,12 @@ public final class ClientParallaxTooltip {
                     + line * 1.37F;
             float waveY = Mth.sin(phase) * amplitude;
             float refractX = Mth.cos(phase * 0.71F) *
-                    (line == 0 ? 0.95F : 0.38F);
+                    (line == 0 ? 0.95F : 0.38F) * motionScale;
             String character = new String(Character.toChars(codePoint));
             FormattedCharSequence glyph = FormattedCharSequence.forward(character, style);
             int glyphWidth = font.width(glyph);
             float verticalScale = 1.0F + Mth.cos(phase - 0.55F) *
-                    (line == 0 ? 0.15F : 0.07F);
+                    (line == 0 ? 0.15F : 0.07F) * motionScale;
             Matrix4f glyphPose = scaledGlyphPose(poseStack, cursorX[0], startY,
                     glyphWidth, verticalScale);
 
@@ -237,16 +338,18 @@ public final class ClientParallaxTooltip {
                         character, magentaEchoStyle);
                 float echoY = startY - waveY * 0.60F + 0.7F;
                 font.drawInBatch(cyanEcho, cursorX[0] - 1.25F - refractX,
-                        echoY, -1, false, glyphPose, buffers,
+                        echoY, textDrawColor(alpha * 58 / 100), false,
+                        glyphPose, buffers,
                         Font.DisplayMode.NORMAL, 0, 15728880);
                 font.drawInBatch(magentaEcho, cursorX[0] + 1.25F - refractX,
-                        echoY + 0.35F, -1, false, glyphPose, buffers,
+                        echoY + 0.35F, textDrawColor(alpha * 52 / 100),
+                        false, glyphPose, buffers,
                         Font.DisplayMode.NORMAL,
                         0, 15728880);
             }
 
             font.drawInBatch(glyph, cursorX[0] + refractX, startY + waveY,
-                    -1, true, glyphPose, buffers,
+                    textDrawColor(alpha), true, glyphPose, buffers,
                     Font.DisplayMode.NORMAL, 0, 15728880);
             cursorX[0] += glyphWidth;
             return true;
@@ -264,8 +367,8 @@ public final class ClientParallaxTooltip {
                 .translate(-pivotX, -pivotY, 0.0F);
     }
 
-    private static FormattedText animateText(FormattedText source, int line,
-                                             long now) {
+    private static Component animateText(FormattedText source, int line,
+                                         long now) {
         MutableComponent animated = Component.empty();
         float timeSeconds = animationSeconds(now);
         int length = Math.max(1, source.getString().codePointCount(
@@ -328,6 +431,10 @@ public final class ClientParallaxTooltip {
         // to float. Keep the value in a short repeating window before doing any
         // float animation math so every rendered frame advances its phase.
         return now % 3_600_000L / 1000.0F;
+    }
+
+    private static int textDrawColor(int alpha) {
+        return Mth.clamp(alpha, 0, 255) << 24 | 0x00FFFFFF;
     }
 
     private static void drawFrame(GuiGraphics graphics, int left, int top,
