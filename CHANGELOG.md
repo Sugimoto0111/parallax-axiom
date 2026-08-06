@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.15.1
+
+- Flow an animated thin-film gradient across the item title one character at a time
+- Sweep a restrained iridescent highlight through the two lore lines
+- Pulse the function hint independently while preserving each line's original formatting
+- Give the four Parallax Axiom text lines separate sub-pixel drift without moving unrelated tooltip content
+
 ## 0.15.0
 
 - Add a custom textureless tooltip renderer for Final Conclusion and Invariant Observer

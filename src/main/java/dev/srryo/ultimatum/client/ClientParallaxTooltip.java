@@ -1,12 +1,19 @@
 package dev.srryo.ultimatum.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.datafixers.util.Either;
 import dev.srryo.ultimatum.UltimatumMod;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FormattedText;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextColor;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderTooltipEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
@@ -15,6 +22,7 @@ import net.minecraftforge.fml.common.Mod;
 import org.joml.Vector2ic;
 
 import java.util.List;
+import java.util.ListIterator;
 
 /**
  * Textureless tooltip presentation for the two Parallax Axiom endgame items.
@@ -28,6 +36,27 @@ public final class ClientParallaxTooltip {
     private static final int FRAME_DEPTH = 500;
 
     private ClientParallaxTooltip() {
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onGatherTooltip(RenderTooltipEvent.GatherComponents event) {
+        if (!isParallaxItem(event.getItemStack())) {
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        int textLine = 0;
+        ListIterator<Either<FormattedText, TooltipComponent>> iterator =
+                event.getTooltipElements().listIterator();
+        while (iterator.hasNext() && textLine < 4) {
+            Either<FormattedText, TooltipComponent> element = iterator.next();
+            if (element.left().isEmpty()) {
+                continue;
+            }
+            iterator.set(Either.left(animateText(element.left().orElseThrow(),
+                    textLine, now)));
+            textLine++;
+        }
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
@@ -130,8 +159,16 @@ public final class ClientParallaxTooltip {
         int componentY = textY;
         for (int index = 0; index < components.size(); index++) {
             ClientTooltipComponent component = components.get(index);
+            float linePhase = now * 0.00115F + index * 1.73F;
+            float textDriftX = index < 4 ? Mth.sin(linePhase) *
+                    (index == 0 ? 0.85F : 0.48F) : 0.0F;
+            float textDriftY = index < 4 ? Mth.cos(linePhase * 0.73F) *
+                    (index == 0 ? 0.42F : 0.22F) : 0.0F;
+            poseStack.pushPose();
+            poseStack.translate(textDriftX, textDriftY, 0.0F);
             component.renderText(font, textX, componentY, poseStack.last().pose(),
                     graphics.bufferSource());
+            poseStack.popPose();
             componentY += component.getHeight() + (index == 0 ? 2 : 0);
         }
         graphics.flush();
@@ -143,6 +180,60 @@ public final class ClientParallaxTooltip {
             componentY += component.getHeight() + (index == 0 ? 2 : 0);
         }
         poseStack.popPose();
+    }
+
+    private static FormattedText animateText(FormattedText source, int line,
+                                             long now) {
+        MutableComponent animated = Component.empty();
+        int length = Math.max(1, source.getString().codePointCount(
+                0, source.getString().length()));
+        int[] characterIndex = {0};
+        source.visit((style, segment) -> {
+            segment.codePoints().forEach(codePoint -> {
+                int color = animatedTextColor(line, characterIndex[0], length, now);
+                Style coloredStyle = style.withColor(TextColor.fromRgb(color));
+                animated.append(Component.literal(new String(Character.toChars(codePoint)))
+                        .setStyle(coloredStyle));
+                characterIndex[0]++;
+            });
+            return FormattedText.STOP_ITERATION.empty();
+        }, Style.EMPTY);
+        return animated;
+    }
+
+    private static int animatedTextColor(int line, int character, int length,
+                                         long now) {
+        float position = character / (float) Math.max(1, length - 1);
+        if (line == 0) {
+            float hue = Mth.positiveModulo(now / 7200.0F + position * 0.42F, 1.0F);
+            float brightness = 0.91F + 0.09F * Mth.sin(
+                    now * 0.0031F - character * 0.58F);
+            return Mth.hsvToRgb(hue, 0.43F, brightness);
+        }
+
+        if (line == 1 || line == 2) {
+            float sweep = Mth.positiveModulo(now / 3100.0F + line * 0.19F, 1.0F);
+            float distance = Math.abs(position - sweep);
+            distance = Math.min(distance, 1.0F - distance);
+            float highlight = Mth.clamp(1.0F - distance * 8.5F, 0.0F, 1.0F);
+            highlight *= highlight;
+            int film = Mth.hsvToRgb(Mth.positiveModulo(now / 8500.0F
+                    + line * 0.17F, 1.0F), 0.34F, 1.0F);
+            return mixRgb(0x98A3AE, film, 0.78F * highlight);
+        }
+
+        float pulse = 0.5F + 0.5F * Mth.sin(now * 0.0024F - character * 0.24F);
+        int film = Mth.hsvToRgb(Mth.positiveModulo(now / 9000.0F
+                + position * 0.18F, 1.0F), 0.42F, 0.92F);
+        return mixRgb(0x3B7380, film, 0.25F + pulse * 0.48F);
+    }
+
+    private static int mixRgb(int from, int to, float amount) {
+        float clamped = Mth.clamp(amount, 0.0F, 1.0F);
+        int red = Math.round(Mth.lerp(clamped, from >> 16 & 0xFF, to >> 16 & 0xFF));
+        int green = Math.round(Mth.lerp(clamped, from >> 8 & 0xFF, to >> 8 & 0xFF));
+        int blue = Math.round(Mth.lerp(clamped, from & 0xFF, to & 0xFF));
+        return red << 16 | green << 8 | blue;
     }
 
     private static void drawFrame(GuiGraphics graphics, int left, int top,
