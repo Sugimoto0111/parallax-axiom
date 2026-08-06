@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.15.0
+
+- Add a custom textureless tooltip renderer for Final Conclusion and Invariant Observer
+- Render a translucent black-mirror panel with animated iridescent thin-film borders
+- Add displaced ghost contours, cursor-dependent glass seams, incomplete lens pixels and extended corner brackets
+- Extend animated elliptical lenses, skewed panes and detached film fragments beyond both sides of the tooltip
+- Preserve vanilla tooltip components, Shift detail switching and screen-edge positioning
+
 ## 0.14.1
 
 - Resolve at most one server-authoritative look target during each Final Conclusion swing
