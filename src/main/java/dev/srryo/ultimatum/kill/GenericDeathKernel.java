@@ -8,6 +8,8 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
@@ -16,9 +18,8 @@ import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A mod-agnostic death path that writes the vanilla backing state directly. It is only
- * entered after ordinary damage was rejected, and it still gives the target's own die()
- * implementation one chance before reconstructing the minimum death semantics itself.
+ * NoSugar-style forced death. It deliberately does not call target hurt/setHealth/die:
+ * those virtual methods are exactly where protected mobs reject or replace death.
  */
 final class GenericDeathKernel {
     private static final String SEMANTICS_EMITTED_TAG = "ultimatum:generic_death_emitted";
@@ -33,31 +34,20 @@ final class GenericDeathKernel {
                 : level.damageSources().playerAttack(attacker);
         LivingEntityDeathAccessor access = (LivingEntityDeathAccessor) target;
 
+        ForcedDeathState.mark(target);
+        ExternalErasedStateBridge.mark(target);
         forceVanillaHealth(target, 0.0F);
         target.setPose(Pose.DYING);
+        try {
+            target.getCombatTracker().recordDamage(source, Float.POSITIVE_INFINITY);
+        } catch (Throwable ignored) {
+        }
         if (attacker != null) {
             access.ultimatum$setLastHurtByPlayer(attacker);
             access.ultimatum$setLastHurtByPlayerTime(100);
             access.ultimatum$setLastHurtByMob(attacker);
         }
 
-        // A prior die() may have completed while a custom getHealth()/isAlive() lied about
-        // the result. Never emit loot or death events twice in that case.
-        if (access.ultimatum$isDeadFlag()) {
-            return true;
-        }
-
-        try {
-            target.die(source);
-        } catch (Throwable error) {
-            UltimatumMod.LOGGER.debug("Target-specific die() rejected generic death for {}", target, error);
-        }
-        if (access.ultimatum$isDeadFlag()) {
-            return true;
-        }
-
-        // The target canceled or replaced die(). Establish the backing state ourselves,
-        // then reproduce the observable death contract before the delayed erase fallback.
         access.ultimatum$setDeadFlag(true);
         access.ultimatum$setDeathTime(1);
         target.setPose(Pose.DYING);
@@ -66,22 +56,36 @@ final class GenericDeathKernel {
         if (!target.getPersistentData().getBoolean(SEMANTICS_EMITTED_TAG)) {
             target.getPersistentData().putBoolean(SEMANTICS_EMITTED_TAG, true);
             try {
-                MinecraftForge.EVENT_BUS.post(new LivingDeathEvent(target, source));
-            } catch (Throwable error) {
-                UltimatumMod.LOGGER.debug("Synthetic LivingDeathEvent was rejected for {}", target, error);
-            }
-            try {
                 access.ultimatum$dropAllDeathLoot(source);
             } catch (Throwable error) {
                 UltimatumMod.LOGGER.warn("Could not emit generic death loot for {}", target, error);
             }
-        }
-        try {
-            level.broadcastEntityEvent(target, (byte) 3);
-        } catch (Throwable error) {
-            UltimatumMod.LOGGER.debug("Could not broadcast generic death animation for {}", target, error);
+            try {
+                MinecraftForge.EVENT_BUS.post(new LivingDeathEvent(target, source));
+            } catch (Throwable error) {
+                UltimatumMod.LOGGER.debug("Synthetic LivingDeathEvent was rejected for {}", target, error);
+            }
+            playDeathSounds(target, access);
         }
         return true;
+    }
+
+    private static void playDeathSounds(LivingEntity target,
+                                        LivingEntityDeathAccessor access) {
+        try {
+            SoundEvent sound = access.ultimatum$getDeathSound();
+            if (sound != null) {
+                target.playSound(sound, access.ultimatum$getSoundVolume(),
+                        target.getVoicePitch());
+            }
+        } catch (Throwable error) {
+            UltimatumMod.LOGGER.debug("Could not play forced death sound for {}", target, error);
+        }
+        try {
+            target.playSound(SoundEvents.PLAYER_ATTACK_STRONG,
+                    access.ultimatum$getSoundVolume(), target.getVoicePitch());
+        } catch (Throwable ignored) {
+        }
     }
 
     @SuppressWarnings("unchecked")

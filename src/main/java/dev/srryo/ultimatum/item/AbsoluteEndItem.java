@@ -53,7 +53,7 @@ public final class AbsoluteEndItem extends SwordItem {
                                 TooltipFlag flag) {
         tooltip.add(Component.translatable("item.ultimatum.absolute_end.desc")
                 .withStyle(ChatFormatting.DARK_RED));
-        tooltip.add(Component.translatable("item.ultimatum.absolute_end.invincibility")
+        tooltip.add(Component.translatable("item.ultimatum.absolute_end.artifact_required")
                 .withStyle(ChatFormatting.GOLD));
     }
 

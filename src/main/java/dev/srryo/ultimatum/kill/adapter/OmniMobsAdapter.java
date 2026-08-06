@@ -33,17 +33,17 @@ public final class OmniMobsAdapter implements KillAdapter {
 
     @Override
     public boolean supports(Entity target) {
-        return target.getClass().getName().startsWith(PACKAGE_PREFIX);
+        // Ordinary Flashfur, Alarm, Silverlight, etc. are real LivingEntities and must
+        // use the universal death kernel. Only Metapotent needs an Omni-specific adapter
+        // because the actual boss is a non-Entity controller that recreates its proxy.
+        return target.getClass().getName().startsWith(PACKAGE_PREFIX)
+                && target.getClass().getName().endsWith("MetapotentFlashfurEntity");
     }
 
     @Override
     public void execute(ServerLevel level, Entity target, ServerPlayer attacker, KillService service)
             throws Exception {
-        if (target.getClass().getName().endsWith("MetapotentFlashfurEntity")) {
-            removeMetapotentController(level, target, service);
-        } else {
-            removeRespawningBoss(level, target, attacker, service);
-        }
+        removeMetapotentController(level, target, service);
     }
 
     private static void removeRespawningBoss(ServerLevel level, Entity selected,

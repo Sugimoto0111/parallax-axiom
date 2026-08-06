@@ -7,6 +7,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = Player.class, priority = 2000)
 public abstract class PlayerInvincibilityMixin {
@@ -25,6 +26,14 @@ public abstract class PlayerInvincibilityMixin {
                                                     CallbackInfoReturnable<Boolean> callback) {
         if (InvincibilityService.isProtected((Player) (Object) this)) {
             callback.setReturnValue(true);
+        }
+    }
+
+    @Inject(method = "tick", at = @At("RETURN"))
+    private void ultimatum$releaseRestraintsAfterTick(CallbackInfo callback) {
+        Player self = (Player) (Object) this;
+        if (InvincibilityService.isProtected(self)) {
+            InvincibilityService.releaseVanillaRestraints(self);
         }
     }
 }

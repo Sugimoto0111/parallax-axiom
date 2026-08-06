@@ -4,9 +4,13 @@ import dev.srryo.ultimatum.UltimatumMod;
 import dev.srryo.ultimatum.kill.ReflectionAccess;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectCategory;
+import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
@@ -14,11 +18,17 @@ import net.minecraftforge.event.entity.living.LivingDamageEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.living.LivingKnockBackEvent;
+import net.minecraftforge.event.entity.living.MobEffectEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.server.ServerLifecycleHooks;
+import top.theillusivec4.curios.api.CuriosApi;
+import top.theillusivec4.curios.api.SlotResult;
 
+import java.util.ArrayList;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,19 +39,28 @@ public final class InvincibilityService {
 
     public static boolean isProtected(Entity entity) {
         return entity instanceof Player player
-                && (isHoldingAbsoluteEnd(player) || ANCHORED_PLAYERS.contains(player.getUUID()));
+                && (hasAbsoluteArtifactEquipped(player)
+                || ANCHORED_PLAYERS.contains(player.getUUID()));
     }
 
-    public static boolean isHoldingAbsoluteEnd(Player player) {
-        if (!UltimatumMod.ABSOLUTE_END.isPresent()) {
-            return false;
+    public static boolean hasAbsoluteArtifactEquipped(Player player) {
+        return findAbsoluteArtifact(player).isPresent();
+    }
+
+    public static Optional<SlotResult> findAbsoluteArtifact(Player player) {
+        if (!UltimatumMod.ABSOLUTE_ARTIFACT.isPresent()) {
+            return Optional.empty();
         }
         try {
-            return player.getMainHandItem().is(UltimatumMod.ABSOLUTE_END.get())
-                    || player.getOffhandItem().is(UltimatumMod.ABSOLUTE_END.get());
+            return CuriosApi.getCuriosInventory(player).resolve()
+                    .flatMap(handler -> handler.findFirstCurio(
+                            stack -> stack.is(UltimatumMod.ABSOLUTE_ARTIFACT.get()))
+                            .filter(result -> "artifact".equals(
+                                    result.slotContext().identifier())
+                                    && !result.slotContext().cosmetic()));
         } catch (Throwable ignored) {
-            // Forge's GameTest MockPlayer intentionally has no Inventory instance.
-            return false;
+            // A capability can be temporarily unavailable while a player changes worlds.
+            return Optional.empty();
         }
     }
 
@@ -88,7 +107,9 @@ public final class InvincibilityService {
             entity.setAbsorptionAmount(Math.max(0.0F, entity.getAbsorptionAmount()));
             entity.clearFire();
             entity.setAirSupply(entity.getMaxAirSupply());
+            releaseVanillaRestraints(entity);
             entity.fallDistance = 0.0F;
+            purgeHarmfulEffects(entity);
             if (entity instanceof Player player) {
                 player.getFoodData().setFoodLevel(20);
                 player.getFoodData().setSaturation(20.0F);
@@ -125,10 +146,17 @@ public final class InvincibilityService {
         }
     }
 
+    @SubscribeEvent(priority = EventPriority.HIGHEST, receiveCanceled = true)
+    public void onEffectApplicable(MobEffectEvent.Applicable event) {
+        if (isProtected(event.getEntity()) && isHarmful(event.getEffectInstance())) {
+            event.setResult(Event.Result.DENY);
+        }
+    }
+
     @SubscribeEvent
     public void onPlayerTick(TickEvent.PlayerTickEvent event) {
         Player player = event.player;
-        if (isHoldingAbsoluteEnd(player)) {
+        if (hasAbsoluteArtifactEquipped(player)) {
             ANCHORED_PLAYERS.add(player.getUUID());
             restoreNow(player);
         } else if (event.phase == TickEvent.Phase.END) {
@@ -146,7 +174,7 @@ public final class InvincibilityService {
                 continue;
             }
             restoreNow(player);
-            if (!isHoldingAbsoluteEnd(player)) {
+            if (!hasAbsoluteArtifactEquipped(player)) {
                 ANCHORED_PLAYERS.remove(player.getUUID());
             }
         }
@@ -162,6 +190,40 @@ public final class InvincibilityService {
             event.setCanceled(true);
             restoreNow(entity);
         }
+    }
+
+    public static boolean isHarmful(MobEffectInstance effect) {
+        return effect != null && effect.getEffect().getCategory() == MobEffectCategory.HARMFUL;
+    }
+
+    public static void purgeHarmfulEffects(LivingEntity entity) {
+        for (MobEffectInstance instance : new ArrayList<>(entity.getActiveEffects())) {
+            if (!isHarmful(instance)) {
+                continue;
+            }
+            MobEffect effect = instance.getEffect();
+            try {
+                entity.removeEffect(effect);
+            } catch (Throwable ignored) {
+            }
+            if (entity.getActiveEffectsMap().remove(effect) != null) {
+                try {
+                    effect.removeAttributeModifiers(entity, entity.getAttributes(),
+                            instance.getAmplifier());
+                } catch (Throwable ignored) {
+                }
+                ReflectionAccess.put(entity, true, "effectsDirty", "f_20948_");
+            }
+        }
+    }
+
+    /** Clears vanilla restraint state even when another mod writes it directly. */
+    public static void releaseVanillaRestraints(LivingEntity entity) {
+        entity.setTicksFrozen(0);
+        entity.isInPowderSnow = false;
+        entity.wasInPowderSnow = false;
+        ReflectionAccess.put(entity, Vec3.ZERO,
+                "stuckSpeedMultiplier", "f_19865_");
     }
 
 }

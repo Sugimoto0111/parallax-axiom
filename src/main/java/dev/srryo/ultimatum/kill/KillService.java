@@ -1,7 +1,6 @@
 package dev.srryo.ultimatum.kill;
 
 import dev.srryo.ultimatum.UltimatumMod;
-import dev.srryo.ultimatum.kill.adapter.OmniMobsAdapter;
 import dev.srryo.ultimatum.kill.adapter.Pig2Adapter;
 import dev.srryo.ultimatum.kill.adapter.TrialMonolithAdapter;
 import net.minecraft.server.MinecraftServer;
@@ -26,12 +25,11 @@ import org.jetbrains.annotations.Nullable;
 
 public final class KillService {
     private final Queue<KillRequest> requests = new ConcurrentLinkedQueue<>();
-    private final OmniMobsAdapter omniMobsAdapter = new OmniMobsAdapter();
     private final List<KillAdapter> adapters = List.of(
             new Pig2Adapter(),
-            omniMobsAdapter,
             new TrialMonolithAdapter()
     );
+    private final LogicalControllerEraser logicalControllerEraser = new LogicalControllerEraser();
     private final TombstoneRegistry tombstones = new TombstoneRegistry();
     private final DeepEntityEraser eraser = new DeepEntityEraser();
     private final GenericDeathKernel genericDeathKernel = new GenericDeathKernel();
@@ -88,6 +86,14 @@ public final class KillService {
         lastProcessedServerTick = tick;
 
         tombstones.tick(tick);
+        for (ServerLevel level : server.getAllLevels()) {
+            for (Entity reentered : tombstones.findReentered(level, tick)) {
+                UltimatumMod.LOGGER.warn(
+                        "Permanently erased entity {} re-entered the world; removing it again",
+                        reentered);
+                eraser.erase(level, reentered);
+            }
+        }
         Queue<Object> due = pig2Resets.remove((long) tick);
         if (due != null) {
             Object pig2Class;
@@ -139,15 +145,31 @@ public final class KillService {
             return;
         }
         specialSwingTicks.put(serverPlayer.getUUID(), now);
-        eraseSpecialLookTarget(serverPlayer, 512.0D);
+        eraseSpecialLookTarget(serverPlayer,
+                UltimatumMod.ARTIFACT_REACH_SERVICE.reach(serverPlayer));
     }
 
     public boolean eraseSpecialLookTarget(Player player, double reach) {
-        if (!(player instanceof ServerPlayer serverPlayer)
-                || !(player.level() instanceof ServerLevel level)) {
+        if (!(player.level() instanceof ServerLevel level)) {
             return false;
         }
-        return omniMobsAdapter.eraseLookedAtController(level, serverPlayer, reach, this);
+        if (player instanceof ServerPlayer serverPlayer
+                && logicalControllerEraser.eraseLookedAt(level, serverPlayer, reach, this)) {
+            return true;
+        }
+        List<Entity> candidates = LookTargetResolver.candidates(level, player, reach);
+        if (candidates.isEmpty()) {
+            return false;
+        }
+        // This fallback is what reaches mobs that suppress vanilla picking/attack
+        // packets. It still enters the exact same queued execution pipeline as a normal
+        // onLeftClickEntity call.
+        Entity selected = candidates.stream()
+                .filter(LivingEntity.class::isInstance)
+                .findFirst()
+                .orElse(candidates.get(0));
+        enqueue(player, selected);
+        return true;
     }
 
     private static boolean isHoldingAbsoluteEnd(Player player) {
@@ -190,6 +212,10 @@ public final class KillService {
         KillAdapter adapter = findAdapter(target);
         boolean deferred = false;
         try {
+            if (logicalControllerEraser.eraseIfPresent(level, target, this)) {
+                return;
+            }
+
             // Pig2 is the sole LivingEntity exception: merely attempting a normal death
             // is known to trip its deliberate JVM shutdown path. Non-living controller
             // proxies also have no death semantics for the generic kernel to establish.
@@ -207,9 +233,51 @@ public final class KillService {
                 return;
             }
 
+            if (requiresUniversalDeathKernel(target)) {
+                UltimatumMod.LOGGER.info(
+                        "Executing universal direct-death pipeline for modded entity {}", target);
+                startUniversalAnimatedDeath(server, level, living, attacker);
+                deferred = true;
+                return;
+            }
+
+            if (adapter != null && adapter.requiresImmediateIsolation(target)) {
+                UltimatumMod.LOGGER.info(
+                        "Skipping hostile hurt probe; isolating {} through the generic death kernel and {} adapter",
+                        target, adapter.name());
+
+                // Establish real death and detach hostile health/respawn state in this
+                // server tick. Afterwards remove only the server tick-list entry: clients
+                // retain the model long enough to render the red falling death animation,
+                // while the entity gets no further AI/attack tick.
+                genericDeathKernel.execute(level, living, attacker);
+                try {
+                    adapter.execute(level, target, attacker, this);
+                } catch (Throwable error) {
+                    UltimatumMod.LOGGER.error("{} immediate isolation failed for {}",
+                            adapter.name(), target, error);
+                }
+                DeterministicWorldIndexEraser.suspendServerTicking(level, target);
+                deferred = true;
+                UUID isolatedUuid = target.getUUID();
+                scheduleTask(server, 20, () -> {
+                    Entity remainder = findIndexedEntity(level, isolatedUuid);
+                    if (remainder != null) {
+                        markAndErase(level, remainder, 400);
+                    }
+                    pendingExecutions.remove(isolatedUuid);
+                });
+                return;
+            }
+
             if (tryStandardDeath(level, living, attacker)) {
                 UltimatumMod.LOGGER.info("Natural death started for {}; observing it before escalation",
                         target);
+                if (adapter != null && adapter.concealConfirmedDeath(target)) {
+                    // The server keeps the real death/drop lifecycle. Only remove the
+                    // misleading client corpse that some bosses render as still alive.
+                    eraser.concealConfirmedDeath(level, target);
+                }
                 deferred = true;
                 scheduleTask(server, NATURAL_DEATH_TIMEOUT,
                         () -> verifyNaturalDeath(level, observedTarget.getUUID(), observedTarget,
@@ -418,8 +486,51 @@ public final class KillService {
                 && (!living.isAlive() || living.isDeadOrDying());
     }
 
+    private static boolean requiresUniversalDeathKernel(Entity target) {
+        // This is intentionally based on whether the runtime class is vanilla, not on a
+        // particular mod id. Unknown modded LivingEntities receive the same generic path
+        // as ordinary Omni mobs, without triggering a hostile hurt() override first.
+        return !target.getClass().getName().startsWith("net.minecraft.");
+    }
+
+    private void startUniversalAnimatedDeath(MinecraftServer server, ServerLevel level,
+                                             LivingEntity target,
+                                             @Nullable ServerPlayer attacker) {
+        UUID targetUuid = target.getUUID();
+        genericDeathKernel.execute(level, target, attacker);
+
+        // Keep zero health visible during the normal red/falling animation. Vanilla emits
+        // event 60 (the death POOF) only when deathTime reaches 20, immediately before
+        // removal, so do not emit it in GenericDeathKernel at death start.
+        new GenericBossEventPurger(level).zeroProgress(target);
+        for (ServerPlayer player : level.players()) {
+            try {
+                dev.srryo.ultimatum.network.UltimatumNetwork.animateDeathFor(player, target);
+            } catch (Throwable error) {
+                UltimatumMod.LOGGER.debug("Could not start client death animation for {}", target,
+                        error);
+            }
+        }
+        DeterministicWorldIndexEraser.suspendServerTicking(level, target);
+        scheduleTask(server, 21, () -> {
+            Entity remainder = findIndexedEntity(level, targetUuid);
+            if (remainder != null) {
+                try {
+                    level.broadcastEntityEvent(remainder, (byte) 60);
+                } catch (Throwable error) {
+                    UltimatumMod.LOGGER.debug("Could not broadcast delayed death particles for {}",
+                            remainder, error);
+                }
+                markAndErase(level, remainder, 400);
+            }
+            pendingExecutions.remove(targetUuid);
+        });
+    }
+
     public void markAndErase(ServerLevel level, Entity target, int lifetimeTicks) {
-        tombstones.add(level, target, level.getServer().getTickCount() + lifetimeTicks);
+        // The timeout parameter is retained for binary/source compatibility with adapters.
+        // Final erasure is now permanent for this UUID and is persisted with the world.
+        tombstones.addPermanent(level, target);
         eraser.erase(level, target);
     }
 
