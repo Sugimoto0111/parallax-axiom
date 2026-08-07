@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.18.3
+
+- Give Final Conclusion a seven-layer contour volume instead of one flat trace plane
+- Preserve the face-on brightness while exposing separated depth lines at oblique angles
+- Place the restrained refraction echoes just beyond the front and back contour faces
+
 ## 0.18.2
 
 - Require ordinary entities to intersect the server-side view ray before fallback acquisition
