@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.18.7
+
+- Match Final Conclusion's contour layers to the observer halo's full moving rainbow palette
+- Keep every contour permanently full-bright instead of boosting it only during attacks
+- Remove attack animation from the sword's emissive intensity
+
 ## 0.18.6
 
 - Colour the independent contour layers with a restrained cyan-to-blue-violet depth palette
