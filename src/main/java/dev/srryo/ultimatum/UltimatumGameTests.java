@@ -19,6 +19,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
@@ -103,6 +104,41 @@ public final class UltimatumGameTests {
                     "The unpickable look target survived the universal pipeline");
             helper.succeed();
         });
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 20)
+    public static void serverLookFallbackRejectsOffAxisMob(GameTestHelper helper) {
+        Player attacker = helper.makeMockPlayer();
+        Vec3 attackerPosition = Vec3.atBottomCenterOf(helper.absolutePos(new BlockPos(1, 2, 1)));
+        attacker.moveTo(attackerPosition.x, attackerPosition.y, attackerPosition.z,
+                0.0F, 0.0F);
+
+        Zombie target = new Zombie(helper.getLevel());
+        target.moveTo(helper.absolutePos(new BlockPos(3, 2, 4)), 0.0F, 0.0F);
+        helper.getLevel().addFreshEntity(target);
+
+        helper.assertTrue(!UltimatumMod.KILL_SERVICE.eraseSpecialLookTarget(attacker, 16.0D),
+                "The server look fallback acquired an ordinary mob outside the view ray");
+        helper.assertTrue(target.isAlive(), "The off-axis mob was queued for erasure");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 20)
+    public static void serverLookFallbackStopsAtBlock(GameTestHelper helper) {
+        Player attacker = helper.makeMockPlayer();
+        Vec3 attackerPosition = Vec3.atBottomCenterOf(helper.absolutePos(new BlockPos(1, 2, 1)));
+        attacker.moveTo(attackerPosition.x, attackerPosition.y, attackerPosition.z,
+                0.0F, 0.0F);
+        helper.setBlock(new BlockPos(1, 3, 3), Blocks.STONE);
+
+        Zombie target = new Zombie(helper.getLevel());
+        target.moveTo(helper.absolutePos(new BlockPos(1, 2, 5)), 0.0F, 0.0F);
+        helper.getLevel().addFreshEntity(target);
+
+        helper.assertTrue(!UltimatumMod.KILL_SERVICE.eraseSpecialLookTarget(attacker, 16.0D),
+                "The server look fallback acquired a mob through a solid block");
+        helper.assertTrue(target.isAlive(), "The occluded mob was queued for erasure");
+        helper.succeed();
     }
 
     @GameTest(template = "empty", timeoutTicks = 100)

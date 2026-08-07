@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.18.2
+
+- Require ordinary entities to intersect the server-side view ray before fallback acquisition
+- Stop fallback targeting at the first solid block hit by the view ray
+- Retain the broad emergency acquisition only for entities with broken or detached bounds
+- Add regressions for off-axis and block-occluded targets
+
 ## 0.18.1
 
 - Replace the filled graphite and procedural inner-space treatment with a transparent traced silhouette
