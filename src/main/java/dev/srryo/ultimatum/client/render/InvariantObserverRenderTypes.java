@@ -6,7 +6,7 @@ import dev.srryo.ultimatum.UltimatumMod;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
 
-/** Layered traced-film pass bound to the Observer's supplied mask. */
+/** Final Conclusion's traced-film pass bound to the Observer's supplied mask. */
 final class InvariantObserverRenderTypes extends RenderType {
     private static final ResourceLocation MASK = new ResourceLocation(
             UltimatumMod.MOD_ID, "textures/item/invariant_observer.png");
@@ -20,7 +20,7 @@ final class InvariantObserverRenderTypes extends RenderType {
             true,
             CompositeState.builder()
                     .setShaderState(new ShaderStateShard(
-                            InvariantObserverShaders::shader))
+                            FinalConclusionShaders::traceShader))
                     .setTextureState(new TextureStateShard(MASK, false, false))
                     .setTransparencyState(ADDITIVE_TRANSPARENCY)
                     .setDepthTestState(LEQUAL_DEPTH_TEST)

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.20.3
+
+- Restore the Observer's exact sword-style contour shader without expanded pixel halos
+- Enlarge first-person held rendering by roughly 1.8x and third-person rendering by 1.35x
+- Leave GUI and Curios inventory scale unchanged while giving the thin mask room to resolve in hand
+
 ## 0.20.2
 
 - Keep all Observer depth layers on one spatial rainbow instead of adding complementary tints into white
