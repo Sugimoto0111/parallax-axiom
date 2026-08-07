@@ -58,17 +58,18 @@ public final class ClientParallaxTooltip {
         }
 
         long now = System.currentTimeMillis();
-        int textLine = 0;
         ListIterator<Either<FormattedText, TooltipComponent>> iterator =
                 event.getTooltipElements().listIterator();
-        while (iterator.hasNext() && textLine < 4) {
+        while (iterator.hasNext()) {
             Either<FormattedText, TooltipComponent> element = iterator.next();
             if (element.left().isEmpty()) {
                 continue;
             }
-            iterator.set(Either.left(animateText(element.left().orElseThrow(),
-                    textLine, now)));
-            textLine++;
+            FormattedText text = element.left().orElseThrow();
+            TextRole role = classifyText(event.getItemStack(), text.getString());
+            if (role != null) {
+                iterator.set(Either.left(animateText(text, role, now)));
+            }
         }
     }
 
@@ -111,6 +112,7 @@ public final class ClientParallaxTooltip {
     private static void render(RenderTooltipEvent.Pre event) {
         GuiGraphics graphics = event.getGraphics();
         Font font = event.getFont();
+        ItemStack stack = event.getItemStack();
         List<ClientTooltipComponent> components = event.getComponents();
         int contentWidth = 0;
         int contentHeight = components.size() == 1 ? -2 : 0;
@@ -194,12 +196,19 @@ public final class ClientParallaxTooltip {
         int componentY = textY;
         for (int index = 0; index < components.size(); index++) {
             ClientTooltipComponent component = components.get(index);
-            if (index < 4 && component instanceof ClientTextTooltip textTooltip) {
-                renderAnimatedGlyphs(font,
+            if (component instanceof ClientTextTooltip textTooltip) {
+                FormattedCharSequence text =
                         ((ClientTextTooltipAccessor) (Object) textTooltip)
-                                .ultimatum$getText(),
-                        textX, componentY, index, timeSeconds, 1.0F, 255,
-                        poseStack, graphics.bufferSource());
+                                .ultimatum$getText();
+                TextRole role = classifyText(stack, plainText(text));
+                if (role != null) {
+                    renderAnimatedGlyphs(font, text, textX, componentY, role,
+                            timeSeconds, 1.0F, 255, poseStack,
+                            graphics.bufferSource());
+                } else {
+                    component.renderText(font, textX, componentY,
+                            poseStack.last().pose(), graphics.bufferSource());
+                }
             } else {
                 component.renderText(font, textX, componentY,
                         poseStack.last().pose(), graphics.bufferSource());
@@ -229,7 +238,7 @@ public final class ClientParallaxTooltip {
             vanillaName.withStyle(ChatFormatting.ITALIC);
         }
         Component highlightName = stack.getHighlightTip(vanillaName);
-        Component animatedName = animateText(highlightName, 0,
+        Component animatedName = animateText(highlightName, TextRole.TITLE,
                 System.currentTimeMillis());
         FormattedCharSequence sequence = animatedName.getVisualOrderText();
         Font font = minecraft.font;
@@ -274,7 +283,7 @@ public final class ClientParallaxTooltip {
                 withAlpha(filmA, alpha * 170 / 255),
                 withAlpha(filmB, alpha * 135 / 255));
 
-        renderAnimatedGlyphs(font, sequence, x, y, 0, timeSeconds,
+        renderAnimatedGlyphs(font, sequence, x, y, TextRole.TITLE, timeSeconds,
                 0.82F, alpha, poseStack, graphics.bufferSource());
         graphics.flush();
         poseStack.popPose();
@@ -292,7 +301,7 @@ public final class ClientParallaxTooltip {
     private static void renderAnimatedGlyphs(Font font,
                                              FormattedCharSequence sequence,
                                              float startX, float startY,
-                                             int line, float timeSeconds,
+                                             TextRole role, float timeSeconds,
                                              float motionScale, int alpha,
                                              PoseStack poseStack,
                                              MultiBufferSource.BufferSource buffers) {
@@ -300,6 +309,7 @@ public final class ClientParallaxTooltip {
             reportedGlyphRenderer = true;
             UltimatumMod.LOGGER.info("Parallax glyph animation renderer is active");
         }
+        int line = role.animationLine;
         float[] cursorX = {startX};
         int[] glyphIndex = {0};
         float amplitude = switch (line) {
@@ -367,7 +377,7 @@ public final class ClientParallaxTooltip {
                 .translate(-pivotX, -pivotY, 0.0F);
     }
 
-    private static Component animateText(FormattedText source, int line,
+    private static Component animateText(FormattedText source, TextRole role,
                                          long now) {
         MutableComponent animated = Component.empty();
         float timeSeconds = animationSeconds(now);
@@ -376,7 +386,7 @@ public final class ClientParallaxTooltip {
         int[] characterIndex = {0};
         source.visit((style, segment) -> {
             segment.codePoints().forEach(codePoint -> {
-                int color = animatedTextColor(line, characterIndex[0], length,
+                int color = animatedTextColor(role, characterIndex[0], length,
                         timeSeconds);
                 Style coloredStyle = style.withColor(TextColor.fromRgb(color));
                 animated.append(Component.literal(new String(Character.toChars(codePoint)))
@@ -388,8 +398,9 @@ public final class ClientParallaxTooltip {
         return animated;
     }
 
-    private static int animatedTextColor(int line, int character, int length,
+    private static int animatedTextColor(TextRole role, int character, int length,
                                          float timeSeconds) {
+        int line = role.animationLine;
         float position = character / (float) Math.max(1, length - 1);
         if (line == 0) {
             float hue = Mth.positiveModulo(timeSeconds / 7.2F
@@ -399,7 +410,7 @@ public final class ClientParallaxTooltip {
             return Mth.hsvToRgb(hue, 0.43F, brightness);
         }
 
-        if (line == 1) {
+        if (line == 1 || line == 2) {
             float sweep = Mth.positiveModulo(timeSeconds / 3.1F
                     + line * 0.19F, 1.0F);
             float distance = Math.abs(position - sweep);
@@ -411,17 +422,61 @@ public final class ClientParallaxTooltip {
             return mixRgb(0x98A3AE, film, 0.78F * highlight);
         }
 
-        if (line == 2) {
-            // The closing observation is the still reference point of the tooltip.
-            return 0x98A3AE;
+        float pulse = 0.5F + 0.5F * Mth.sin(timeSeconds * 2.4F
+                - character * 0.24F);
+        int film = Mth.hsvToRgb(Mth.positiveModulo(timeSeconds / 9.0F
+                + position * 0.18F, 1.0F), 0.42F, 0.92F);
+        return mixRgb(0x3B7380, film, 0.25F + pulse * 0.48F);
+    }
+
+    private static TextRole classifyText(ItemStack stack, String text) {
+        if (text.equals(stack.getHoverName().getString())) {
+            return TextRole.TITLE;
         }
 
-        // The Shift function line carries the full moving thin-film spectrum.
-        float hue = Mth.positiveModulo(timeSeconds / 4.8F
-                + position * 0.55F, 1.0F);
-        float brightness = 0.91F + 0.09F * Mth.sin(
-                timeSeconds * 3.0F - character * 0.42F);
-        return Mth.hsvToRgb(hue, 0.50F, brightness);
+        String translationRoot;
+        if (stack.is(UltimatumMod.ABSOLUTE_END.get())) {
+            translationRoot = "item.ultimatum.absolute_end";
+        } else if (stack.is(UltimatumMod.ABSOLUTE_ARTIFACT.get())) {
+            translationRoot = "item.ultimatum.absolute_artifact";
+        } else {
+            return null;
+        }
+
+        if (text.equals(Component.translatable(translationRoot + ".lore.1").getString())) {
+            return TextRole.LORE_ONE;
+        }
+        if (text.equals(Component.translatable(translationRoot + ".lore.2").getString())) {
+            return TextRole.LORE_TWO;
+        }
+        if (text.equals(Component.translatable(translationRoot + ".detail").getString())
+                || text.equals(Component.translatable("tooltip.ultimatum.hold_shift")
+                        .getString())) {
+            return TextRole.FUNCTION;
+        }
+        return null;
+    }
+
+    private static String plainText(FormattedCharSequence sequence) {
+        StringBuilder text = new StringBuilder();
+        sequence.accept((ignoredIndex, ignoredStyle, codePoint) -> {
+            text.appendCodePoint(codePoint);
+            return true;
+        });
+        return text.toString();
+    }
+
+    private enum TextRole {
+        TITLE(0),
+        LORE_ONE(1),
+        LORE_TWO(2),
+        FUNCTION(3);
+
+        private final int animationLine;
+
+        TextRole(int animationLine) {
+            this.animationLine = animationLine;
+        }
     }
 
     private static int mixRgb(int from, int to, float amount) {

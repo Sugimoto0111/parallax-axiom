@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.20.6
+
+- Assign tooltip animation by semantic role instead of a shared line number
+- Match Invariant Observer's title, lore and function animation to Final Conclusion even when Curios inserts another line
+
 ## 0.20.5
 
 - Keep Invariant Observer's closing observation in a fixed neutral color
