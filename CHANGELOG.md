@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.18.5
+
+- Triple the visible horizontal and vertical drift of Final Conclusion's contour layers
+- Double their depth wander while retaining the overall wire-volume silhouette
+
 ## 0.18.4
 
 - Give every contour-depth layer its own smooth pseudo-random drift

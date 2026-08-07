@@ -49,11 +49,11 @@ public final class FinalConclusionItemRenderer extends BlockEntityWithoutLevelRe
         for (int layer = 0; layer < DEPTH_ALPHA.length; layer++) {
             float progress = layer / (float) (DEPTH_ALPHA.length - 1);
             float phase = layer * 2.431F + 0.73F;
-            float driftX = layeredDrift(time, phase, 0.43F, 0.19F, 0.0046F);
+            float driftX = layeredDrift(time, phase, 0.43F, 0.19F, 0.0140F);
             float driftY = layeredDrift(time, phase + 1.67F,
-                    0.37F, 0.23F, 0.0038F);
+                    0.37F, 0.23F, 0.0115F);
             float depthDrift = layeredDrift(time, phase + 3.11F,
-                    0.29F, 0.17F, 0.0032F);
+                    0.29F, 0.17F, 0.0065F);
             float depth = Mth.lerp(progress, CENTRE_Z - HALF_DEPTH,
                     CENTRE_Z + HALF_DEPTH) + depthDrift;
             texturedPlane(poseStack, trace, driftX, driftY, depth,
