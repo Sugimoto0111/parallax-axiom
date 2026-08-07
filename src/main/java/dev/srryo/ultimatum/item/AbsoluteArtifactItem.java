@@ -3,9 +3,11 @@ package dev.srryo.ultimatum.item;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
 import dev.srryo.ultimatum.UltimatumMod;
+import dev.srryo.ultimatum.client.render.InvariantObserverItemRenderer;
 import dev.srryo.ultimatum.invincibility.InvincibilityService;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -17,14 +19,16 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 import net.minecraftforge.common.ForgeMod;
+import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 import top.theillusivec4.curios.api.SlotContext;
 import top.theillusivec4.curios.api.type.capability.ICurio;
 import top.theillusivec4.curios.api.type.capability.ICurioItem;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 
-/** The invisible Curios anchor for player invincibility and future visual manifestations. */
+/** The Curios anchor for player invariance and the observer-array manifestation. */
 public final class AbsoluteArtifactItem extends Item implements ICurioItem {
     public static final String SLOT_IDENTIFIER = "artifact";
     public static final UUID MOVEMENT_SPEED_ID =
@@ -34,6 +38,19 @@ public final class AbsoluteArtifactItem extends Item implements ICurioItem {
 
     public AbsoluteArtifactItem(Properties properties) {
         super(properties);
+    }
+
+    @Override
+    public void initializeClient(Consumer<IClientItemExtensions> consumer) {
+        consumer.accept(new IClientItemExtensions() {
+            private final BlockEntityWithoutLevelRenderer renderer =
+                    new InvariantObserverItemRenderer();
+
+            @Override
+            public BlockEntityWithoutLevelRenderer getCustomRenderer() {
+                return renderer;
+            }
+        });
     }
 
     @Override
@@ -115,6 +132,6 @@ public final class AbsoluteArtifactItem extends Item implements ICurioItem {
 
     @Override
     public boolean isFoil(ItemStack stack) {
-        return true;
+        return false;
     }
 }

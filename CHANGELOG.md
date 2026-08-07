@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.19.0
+
+- Add the supplied 31x31 white mask as Invariant Observer's inventory texture
+- Split its incomplete rings across four independently drifting and rotating optical depths
+- Apply the observer halo's permanent moving rainbow film and a restrained sweep highlight
+- Add transparent render padding and remove the vanilla enchantment glint
+
 ## 0.18.9
 
 - Finish every textured contour pass before switching to the side-shell vertex format
