@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.20.4
+
+- Replace Invariant Observer's 31x31 one-pixel line mask with the supplied 63x63 band mask
+- Preserve the existing sword-style contour renderer and enlarged held transforms for direct comparison
+
 ## 0.20.3
 
 - Restore the Observer's exact sword-style contour shader without expanded pixel halos
