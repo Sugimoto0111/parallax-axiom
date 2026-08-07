@@ -7,6 +7,13 @@
   "item.ultimatum.absolute_artifact.lore.1": "世界を書き換えるものは、",
   "item.ultimatum.absolute_artifact.lore.2": "観測の基準点へ届かない。",
   "item.ultimatum.absolute_artifact.detail": "装着者を不変化し、能力と知覚を拡張する。",
+  "item.ultimatum.zero_focus": "零位焦点",
+  "item.ultimatum.original_image_mirror": "原像鏡",
+  "item.ultimatum.original_image_mirror.lore": "変化する前の像を、現実として映し続ける。",
+  "item.ultimatum.terminal_image_mirror": "終像鏡",
+  "item.ultimatum.terminal_image_mirror.lore": "五十の終わりは、同じ帰結を指している。",
+  "tooltip.ultimatum.observation.original": "原像観測：%s/%s",
+  "tooltip.ultimatum.observation.terminal": "帰結観測：%s/%s",
   "tooltip.ultimatum.hold_shift": "［Shiftで機能表示］",
   "curios.identifier.artifact": "アーティファクト",
   "key.categories.ultimatum": "視差公理",
@@ -31,5 +38,11 @@
   "message.ultimatum.night_vision.enabled": "暗視：ON",
   "message.ultimatum.night_vision.disabled": "暗視：OFF",
   "message.ultimatum.magnet.enabled": "アイテム吸引（64ブロック）：ON",
-  "message.ultimatum.magnet.disabled": "アイテム吸引：OFF"
+  "message.ultimatum.magnet.disabled": "アイテム吸引：OFF",
+  "message.ultimatum.observation.progress.original": "原像観測：%s/%s",
+  "message.ultimatum.observation.progress.terminal": "帰結観測：%s/%s",
+  "message.ultimatum.observation.locked.original": "この望遠鏡は原像を観測している。",
+  "message.ultimatum.observation.locked.terminal": "この望遠鏡は帰結を観測している。",
+  "message.ultimatum.observation.complete.original": "望遠鏡は原像鏡へ変化した。",
+  "message.ultimatum.observation.complete.terminal": "望遠鏡は終像鏡へ変化した。"
 }

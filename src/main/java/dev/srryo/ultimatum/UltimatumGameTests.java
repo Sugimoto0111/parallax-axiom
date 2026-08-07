@@ -10,6 +10,7 @@ import net.minecraft.server.level.ServerBossEvent;
 import net.minecraft.world.BossEvent;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -28,6 +29,7 @@ import net.minecraftforge.common.ForgeMod;
 import dev.srryo.ultimatum.kill.ContainerBypass;
 import dev.srryo.ultimatum.kill.ReflectionAccess;
 import dev.srryo.ultimatum.invincibility.InvincibilityService;
+import dev.srryo.ultimatum.observation.ObservationService;
 import top.theillusivec4.curios.api.CuriosApi;
 import top.theillusivec4.curios.api.SlotContext;
 import java.lang.reflect.Constructor;
@@ -44,6 +46,63 @@ import java.util.WeakHashMap;
 @PrefixGameTestTemplate(false)
 public final class UltimatumGameTests {
     private UltimatumGameTests() {
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 100)
+    public static void totemObservationCompletesOriginalImageMirror(
+            GameTestHelper helper) {
+        Player player = helper.makeMockPlayer();
+        player.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND,
+                new ItemStack(Items.SPYGLASS));
+        for (int observation = 0;
+             observation < ObservationService.REQUIRED_OBSERVATIONS - 1;
+             observation++) {
+            helper.assertTrue(ObservationService.record(player,
+                            ObservationService.Mode.ORIGINAL),
+                    "An original-image observation was rejected");
+        }
+        helper.assertTrue(!ObservationService.record(player,
+                        ObservationService.Mode.TERMINAL),
+                "A spyglass accepted both observation modes");
+        helper.assertTrue(ObservationService.count(player.getOffhandItem()) == 49,
+                "A rejected terminal observation changed original-image progress");
+
+        player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,
+                new ItemStack(Items.TOTEM_OF_UNDYING));
+        player.setHealth(1.0F);
+        player.hurt(helper.getLevel().damageSources().generic(), 100.0F);
+        helper.runAfterDelay(2, () -> {
+            helper.assertTrue(player.getOffhandItem().is(
+                            UltimatumMod.ORIGINAL_IMAGE_MIRROR.get()),
+                    "The fiftieth observed Totem use did not create an Original-Image Mirror");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 100)
+    public static void bossObservationCompletesTerminalImageMirror(
+            GameTestHelper helper) {
+        Player player = helper.makeMockPlayer();
+        player.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND,
+                new ItemStack(Items.SPYGLASS));
+        for (int observation = 0;
+             observation < ObservationService.REQUIRED_OBSERVATIONS - 1;
+             observation++) {
+            helper.assertTrue(ObservationService.record(player,
+                            ObservationService.Mode.TERMINAL),
+                    "A terminal observation was rejected");
+        }
+
+        LivingEntity wither = EntityType.WITHER.create(helper.getLevel());
+        helper.assertTrue(wither != null, "Wither EntityType returned null");
+        wither.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)),
+                0.0F, 0.0F);
+        helper.getLevel().addFreshEntity(wither);
+        wither.die(helper.getLevel().damageSources().playerAttack(player));
+        helper.assertTrue(player.getOffhandItem().is(
+                        UltimatumMod.TERMINAL_IMAGE_MIRROR.get()),
+                "The fiftieth observed boss death did not create a Terminal-Image Mirror");
+        helper.succeed();
     }
 
     @GameTest(template = "empty", timeoutTicks = 100)

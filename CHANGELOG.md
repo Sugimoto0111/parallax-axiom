@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.21.1
+
+- Record one of two mutually exclusive observation paths on an offhand vanilla spyglass
+- Observe fifty Ender Dragon, Wither or Warden deaths to create Terminal-Image Mirror
+- Observe fifty main-hand Totem activations to create Original-Image Mirror
+- Show live observation progress and convert completed spyglasses into permanent foil items
+- Register Zero Focus with a temporary vanilla model and no acquisition recipe
+- Use vanilla LivingEntity mixins so Omni-Mobs cannot silence observation events
+
 ## 0.20.6
 
 - Assign tooltip animation by semantic role instead of a shared line number

@@ -3,6 +3,7 @@ package dev.srryo.ultimatum;
 import com.mojang.logging.LogUtils;
 import dev.srryo.ultimatum.item.AbsoluteEndItem;
 import dev.srryo.ultimatum.item.AbsoluteArtifactItem;
+import dev.srryo.ultimatum.item.ObservationMirrorItem;
 import dev.srryo.ultimatum.invincibility.InvincibilityService;
 import dev.srryo.ultimatum.mobility.ArtifactMobilityService;
 import dev.srryo.ultimatum.mobility.ArtifactReachService;
@@ -46,6 +47,17 @@ public final class UltimatumMod {
     public static final RegistryObject<Item> ABSOLUTE_ARTIFACT = ITEMS.register("absolute_artifact",
             () -> new AbsoluteArtifactItem(
                     new Item.Properties().stacksTo(1).rarity(Rarity.EPIC).fireResistant()));
+    public static final RegistryObject<Item> ZERO_FOCUS = ITEMS.register("zero_focus",
+            () -> new Item(new Item.Properties().stacksTo(1)
+                    .rarity(Rarity.EPIC).fireResistant()));
+    public static final RegistryObject<Item> ORIGINAL_IMAGE_MIRROR = ITEMS.register(
+            "original_image_mirror", () -> new ObservationMirrorItem(
+                    new Item.Properties().stacksTo(1).rarity(Rarity.EPIC).fireResistant(),
+                    "item.ultimatum.original_image_mirror.lore"));
+    public static final RegistryObject<Item> TERMINAL_IMAGE_MIRROR = ITEMS.register(
+            "terminal_image_mirror", () -> new ObservationMirrorItem(
+                    new Item.Properties().stacksTo(1).rarity(Rarity.EPIC).fireResistant(),
+                    "item.ultimatum.terminal_image_mirror.lore"));
 
     public UltimatumMod(FMLJavaModLoadingContext context) {
         UltimatumNetwork.register();
@@ -64,6 +76,9 @@ public final class UltimatumMod {
         if (event.getTabKey() == CreativeModeTabs.COMBAT) {
             event.accept(ABSOLUTE_END);
             event.accept(ABSOLUTE_ARTIFACT);
+            event.accept(ZERO_FOCUS);
+            event.accept(ORIGINAL_IMAGE_MIRROR);
+            event.accept(TERMINAL_IMAGE_MIRROR);
         }
     }
 

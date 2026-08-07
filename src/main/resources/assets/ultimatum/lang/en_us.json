@@ -7,6 +7,13 @@
   "item.ultimatum.absolute_artifact.lore.1": "What rewrites the world",
   "item.ultimatum.absolute_artifact.lore.2": "cannot reach its point of observation.",
   "item.ultimatum.absolute_artifact.detail": "Makes the wearer invariant and expands ability and perception.",
+  "item.ultimatum.zero_focus": "Zero Focus",
+  "item.ultimatum.original_image_mirror": "Original-Image Mirror",
+  "item.ultimatum.original_image_mirror.lore": "It continues to reflect the image from before the change.",
+  "item.ultimatum.terminal_image_mirror": "Terminal-Image Mirror",
+  "item.ultimatum.terminal_image_mirror.lore": "Fifty endings point toward the same conclusion.",
+  "tooltip.ultimatum.observation.original": "Original-image observations: %s/%s",
+  "tooltip.ultimatum.observation.terminal": "Conclusion observations: %s/%s",
   "tooltip.ultimatum.hold_shift": "[Hold Shift for function]",
   "curios.identifier.artifact": "Artifact",
   "key.categories.ultimatum": "Parallax Axiom",
@@ -31,5 +38,11 @@
   "message.ultimatum.night_vision.enabled": "Night vision: ON",
   "message.ultimatum.night_vision.disabled": "Night vision: OFF",
   "message.ultimatum.magnet.enabled": "Item magnet (64 blocks): ON",
-  "message.ultimatum.magnet.disabled": "Item magnet: OFF"
+  "message.ultimatum.magnet.disabled": "Item magnet: OFF",
+  "message.ultimatum.observation.progress.original": "Original-image observations: %s/%s",
+  "message.ultimatum.observation.progress.terminal": "Conclusion observations: %s/%s",
+  "message.ultimatum.observation.locked.original": "This spyglass is observing the original image.",
+  "message.ultimatum.observation.locked.terminal": "This spyglass is observing conclusions.",
+  "message.ultimatum.observation.complete.original": "The spyglass became an Original-Image Mirror.",
+  "message.ultimatum.observation.complete.terminal": "The spyglass became a Terminal-Image Mirror."
 }
