@@ -20,6 +20,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
@@ -28,6 +29,8 @@ import net.minecraftforge.common.ForgeMod;
 import dev.srryo.ultimatum.kill.ContainerBypass;
 import dev.srryo.ultimatum.kill.ReflectionAccess;
 import dev.srryo.ultimatum.invincibility.InvincibilityService;
+import dev.srryo.ultimatum.ritual.AcquisitionRitualRecipe;
+import dev.srryo.ultimatum.ritual.RitualRegistries;
 import top.theillusivec4.curios.api.CuriosApi;
 import top.theillusivec4.curios.api.SlotContext;
 import java.lang.reflect.Constructor;
@@ -44,6 +47,53 @@ import java.util.WeakHashMap;
 @PrefixGameTestTemplate(false)
 public final class UltimatumGameTests {
     private UltimatumGameTests() {
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 260)
+    public static void observerRitualConsumesEveryOffering(GameTestHelper helper) {
+        AcquisitionRitualRecipe recipe = helper.getLevel().getRecipeManager()
+                .getAllRecipesFor(RitualRegistries.ACQUISITION_TYPE.get()).stream()
+                .filter(candidate -> candidate.getId().getPath()
+                        .equals("invariant_observer_ritual"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(
+                        "Invariant Observer ritual recipe was not loaded"));
+        BlockPos center = helper.absolutePos(new BlockPos(2, 2, 2));
+        int entityOffset = 0;
+        for (AcquisitionRitualRecipe.Requirement requirement : recipe.requirements()) {
+            ItemStack template = requirement.ingredient().getItems()[0].copy();
+            int remaining = requirement.count();
+            while (remaining > 0) {
+                int count = Math.min(remaining, template.getMaxStackSize());
+                ItemStack offering = template.copy();
+                offering.setCount(count);
+                ItemEntity entity = new ItemEntity(helper.getLevel(),
+                        center.getX() + 0.3D + entityOffset % 4 * 0.35D,
+                        center.getY() + 1.0D,
+                        center.getZ() + 0.3D + entityOffset / 4 * 0.25D,
+                        offering);
+                helper.getLevel().addFreshEntity(entity);
+                entityOffset++;
+                remaining -= count;
+            }
+        }
+
+        helper.assertTrue(UltimatumMod.ACQUISITION_RITUAL_SERVICE
+                        .tryStartAt(helper.getLevel(), center),
+                "Complete Observer offering did not start its ritual");
+        helper.runAfterDelay(recipe.duration() + 10, () -> {
+            AABB resultArea = AABB.ofSize(Vec3.atCenterOf(center), 8.0D, 8.0D, 8.0D);
+            List<ItemEntity> results = helper.getLevel().getEntitiesOfClass(
+                    ItemEntity.class, resultArea,
+                    item -> item.getItem().is(UltimatumMod.ABSOLUTE_ARTIFACT.get()));
+            helper.assertTrue(results.size() == 1,
+                    "Observer ritual did not produce exactly one Invariant Observer");
+            helper.assertTrue(helper.getLevel().getEntitiesOfClass(ItemEntity.class,
+                            resultArea, item -> !item.getItem().is(
+                                    UltimatumMod.ABSOLUTE_ARTIFACT.get())).isEmpty(),
+                    "Observer ritual left a reserved offering unconsumed");
+            helper.succeed();
+        });
     }
 
     @GameTest(template = "empty", timeoutTicks = 100)

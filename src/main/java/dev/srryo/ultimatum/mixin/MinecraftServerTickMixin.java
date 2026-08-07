@@ -19,5 +19,7 @@ public abstract class MinecraftServerTickMixin {
     private void ultimatum$runExecutionHeartbeat(BooleanSupplier hasTimeLeft,
                                                   CallbackInfo callback) {
         UltimatumMod.KILL_SERVICE.onVanillaServerTick((MinecraftServer) (Object) this);
+        UltimatumMod.ACQUISITION_RITUAL_SERVICE.onVanillaServerTick(
+                (MinecraftServer) (Object) this);
     }
 }
