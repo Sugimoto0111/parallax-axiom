@@ -6,13 +6,13 @@ import dev.srryo.ultimatum.UltimatumMod;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
 
-/** The flat, two-sided mask pass used by Final Conclusion's inner space. */
+/** The flat, two-sided additive pass used to trace Final Conclusion's mask. */
 final class FinalConclusionRenderTypes extends RenderType {
     private static final ResourceLocation MASK = new ResourceLocation(
             UltimatumMod.MOD_ID, "textures/item/final_conclusion.png");
 
-    static final RenderType INTERIOR = create(
-            "ultimatum_final_conclusion_interior",
+    static final RenderType TRACE = create(
+            "ultimatum_final_conclusion_trace",
             DefaultVertexFormat.NEW_ENTITY,
             VertexFormat.Mode.QUADS,
             256,
@@ -20,9 +20,9 @@ final class FinalConclusionRenderTypes extends RenderType {
             true,
             CompositeState.builder()
                     .setShaderState(new ShaderStateShard(
-                            FinalConclusionShaders::interiorShader))
+                            FinalConclusionShaders::traceShader))
                     .setTextureState(new TextureStateShard(MASK, false, false))
-                    .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
+                    .setTransparencyState(ADDITIVE_TRANSPARENCY)
                     .setDepthTestState(LEQUAL_DEPTH_TEST)
                     .setCullState(NO_CULL)
                     .setWriteMaskState(COLOR_WRITE)

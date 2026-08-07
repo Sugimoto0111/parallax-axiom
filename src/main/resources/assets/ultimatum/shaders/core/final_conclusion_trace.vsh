@@ -12,14 +12,9 @@ uniform mat4 ProjMat;
 
 out vec4 vertexColor;
 out vec2 texCoord0;
-out vec3 viewPosition;
-out vec3 viewNormal;
 
 void main() {
-    vec4 position = ModelViewMat * vec4(Position, 1.0);
-    gl_Position = ProjMat * position;
+    gl_Position = ProjMat * ModelViewMat * vec4(Position, 1.0);
     vertexColor = Color;
     texCoord0 = UV0;
-    viewPosition = position.xyz;
-    viewNormal = normalize(mat3(ModelViewMat) * Normal);
 }

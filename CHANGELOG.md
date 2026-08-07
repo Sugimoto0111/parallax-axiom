@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.18.1
+
+- Replace the filled graphite and procedural inner-space treatment with a transparent traced silhouette
+- Extract the sword's exact pixel boundary from the white mask in the fragment shader
+- Render the contour as a thin additive halo line with two restrained refraction echoes
+- Move a bright tracing head around the outline and intensify it during attacks
+
 ## 0.18.0
 
 - Add a dedicated view-ray-projected shader for Final Conclusion's inner space
