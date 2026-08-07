@@ -3,12 +3,12 @@ package dev.srryo.ultimatum.client.render;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.math.Axis;
 import dev.srryo.ultimatum.UltimatumMod;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.geom.EntityModelSet;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
 import net.minecraft.resources.ResourceLocation;
@@ -21,22 +21,25 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 
 import java.io.IOException;
 import java.io.InputStream;
 
-/** Converts the supplied white pixel mask into four independently moving 3D rings. */
+/** Uses Final Conclusion's layered contour treatment for the Observer's full mask. */
 @Mod.EventBusSubscriber(modid = UltimatumMod.MOD_ID,
         bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class InvariantObserverItemRenderer extends BlockEntityWithoutLevelRenderer {
     private static final ResourceLocation MASK = new ResourceLocation(
             UltimatumMod.MOD_ID, "textures/item/invariant_observer.png");
-    private static final int BAND_COUNT = 4;
     private static final float MASK_MIN = 0.045F;
     private static final float MASK_MAX = 0.955F;
-    private static final float HALF_THICKNESS = 0.0125F;
-    private static volatile VoxelMask voxelMask;
+    private static final float CENTRE_Z = 0.500F;
+    private static final float HALF_DEPTH = 0.052F;
+    private static final int SIDE_ALPHA = 42;
+    private static final int[] DEPTH_ALPHA = {76, 24, 20, 18, 20, 24, 76};
+    private static volatile Silhouette silhouette;
 
     public InvariantObserverItemRenderer() {
         this(Minecraft.getInstance().getBlockEntityRenderDispatcher(),
@@ -51,7 +54,7 @@ public final class InvariantObserverItemRenderer extends BlockEntityWithoutLevel
     @SubscribeEvent
     public static void registerReloadListener(RegisterClientReloadListenersEvent event) {
         event.registerReloadListener((ResourceManagerReloadListener) resourceManager ->
-                voxelMask = null);
+                silhouette = null);
     }
 
     @Override
@@ -59,127 +62,78 @@ public final class InvariantObserverItemRenderer extends BlockEntityWithoutLevel
                              PoseStack poseStack, MultiBufferSource buffers,
                              int packedLight, int packedOverlay) {
         float time = (Util.getMillis() % 600_000L) / 1000.0F;
-        VoxelMask mask = mask();
-        VertexConsumer film = buffers.getBuffer(ObserverRenderTypes.FILM);
+        FinalConclusionShaders.prepare(time, 1.0F);
+        VertexConsumer trace = buffers.getBuffer(InvariantObserverRenderTypes.TRACE);
 
-        for (int band = 0; band < BAND_COUNT; band++) {
-            renderBand(poseStack, film, mask, time, band);
+        // Keep the complete supplied image on every plane, exactly like Final
+        // Conclusion. Nothing is divided by radius, so incomplete rings remain intact.
+        for (int layer = 0; layer < DEPTH_ALPHA.length; layer++) {
+            float progress = layer / (float) (DEPTH_ALPHA.length - 1);
+            float phase = layerPhase(layer);
+            float driftX = layerX(time, phase);
+            float driftY = layerY(time, phase);
+            float depth = layerDepth(time, phase, progress);
+            int colour = filmColor(time, layer * 0.13F);
+            texturedPlane(poseStack, trace, driftX, driftY, depth,
+                    red(colour), green(colour), blue(colour), DEPTH_ALPHA[layer],
+                    LightTexture.FULL_BRIGHT, packedOverlay);
         }
+
+        float echoX = Mth.sin(time * 1.07F) * 0.005F;
+        float echoY = Mth.cos(time * 0.91F) * 0.004F;
+        int rearEcho = filmColor(time, 0.83F);
+        int frontEcho = filmColor(time, 0.39F);
+        texturedPlane(poseStack, trace, echoX - 0.005F, echoY + 0.003F,
+                CENTRE_Z - HALF_DEPTH - 0.007F,
+                red(rearEcho), green(rearEcho), blue(rearEcho), 38,
+                LightTexture.FULL_BRIGHT, packedOverlay);
+        texturedPlane(poseStack, trace, -echoX + 0.004F, -echoY - 0.003F,
+                CENTRE_Z + HALF_DEPTH + 0.007F,
+                red(frontEcho), green(frontEcho), blue(frontEcho), 25,
+                LightTexture.FULL_BRIGHT, packedOverlay);
+
+        // As on the sword, the alpha boundary alone connects the moving outer planes.
+        // Request this different vertex format only after every textured pass is done.
+        int lastLayer = DEPTH_ALPHA.length - 1;
+        float rearPhase = layerPhase(0);
+        float frontPhase = layerPhase(lastLayer);
+        renderSideShell(poseStack, buffers.getBuffer(ObserverRenderTypes.FILM), silhouette(),
+                layerX(time, rearPhase), layerY(time, rearPhase),
+                layerDepth(time, rearPhase, 0.0F), filmColor(time, 0.0F),
+                layerX(time, frontPhase), layerY(time, frontPhase),
+                layerDepth(time, frontPhase, 1.0F),
+                filmColor(time, lastLayer * 0.13F));
     }
 
-    private static void renderBand(PoseStack poseStack, VertexConsumer consumer,
-                                   VoxelMask mask, float time, int band) {
-        float phase = band * 1.917F + 0.41F;
-        float horizontal = layeredDrift(time, phase,
-                0.31F + band * 0.019F, 0.14F, 0.0070F);
-        float vertical = layeredDrift(time, phase + 1.73F,
-                0.27F + band * 0.015F, 0.12F, 0.0058F);
-        float depth = 0.458F + band * 0.028F
-                + Mth.sin(time * (0.19F + band * 0.011F) + phase) * 0.0035F;
-        float rotation = Mth.sin(time * (0.23F + band * 0.014F) + phase * 0.77F)
-                * (1.1F + band * 0.32F);
-
-        poseStack.pushPose();
-        poseStack.translate(0.5F + horizontal, 0.5F + vertical, depth);
-        poseStack.mulPose(Axis.ZP.rotationDegrees(rotation));
-        poseStack.translate(-0.5F, -0.5F, 0.0F);
-        renderBandGeometry(consumer, poseStack.last().pose(), mask, time, band);
-        poseStack.popPose();
+    private static float layerPhase(int layer) {
+        return layer * 2.431F + 0.73F;
     }
 
-    private static void renderBandGeometry(VertexConsumer consumer, Matrix4f matrix,
-                                           VoxelMask mask, float time, int band) {
-        float pixelWidth = (MASK_MAX - MASK_MIN) / mask.width();
-        float pixelHeight = (MASK_MAX - MASK_MIN) / mask.height();
-
-        for (int y = 0; y < mask.height(); y++) {
-            float top = MASK_MAX - y * pixelHeight;
-            float bottom = top - pixelHeight;
-            for (int x = 0; x < mask.width(); x++) {
-                if (mask.bandAt(x, y) != band) {
-                    continue;
-                }
-
-                float left = MASK_MIN + x * pixelWidth;
-                float right = left + pixelWidth;
-                int colour = filmColour(time, band, x, y, mask.width(), mask.height());
-
-                faceQuad(consumer, matrix, left, bottom, right, top,
-                        HALF_THICKNESS, colour, 84);
-                faceQuad(consumer, matrix, right, bottom, left, top,
-                        -HALF_THICKNESS, colour, 84);
-
-                if (mask.bandAt(x - 1, y) != band) {
-                    sideQuad(consumer, matrix, left, bottom, left, top, colour);
-                }
-                if (mask.bandAt(x + 1, y) != band) {
-                    sideQuad(consumer, matrix, right, top, right, bottom, colour);
-                }
-                if (mask.bandAt(x, y - 1) != band) {
-                    sideQuad(consumer, matrix, right, top, left, top, colour);
-                }
-                if (mask.bandAt(x, y + 1) != band) {
-                    sideQuad(consumer, matrix, left, bottom, right, bottom, colour);
-                }
-            }
-        }
+    private static float layerX(float time, float phase) {
+        return layeredDrift(time, phase, 0.41F, 0.18F, 0.0120F);
     }
 
-    private static void faceQuad(VertexConsumer consumer, Matrix4f matrix,
-                                 float x0, float y0, float x1, float y1,
-                                 float z, int colour, int alpha) {
-        modelVertex(consumer, matrix, x0, y0, z, colour, alpha);
-        modelVertex(consumer, matrix, x1, y0, z, colour, alpha);
-        modelVertex(consumer, matrix, x1, y1, z, colour, alpha);
-        modelVertex(consumer, matrix, x0, y1, z, colour, alpha);
+    private static float layerY(float time, float phase) {
+        return layeredDrift(time, phase + 1.67F, 0.35F, 0.22F, 0.0100F);
     }
 
-    private static void sideQuad(VertexConsumer consumer, Matrix4f matrix,
-                                 float x0, float y0, float x1, float y1, int colour) {
-        modelVertex(consumer, matrix, x0, y0, -HALF_THICKNESS, colour, 112);
-        modelVertex(consumer, matrix, x1, y1, -HALF_THICKNESS, colour, 112);
-        modelVertex(consumer, matrix, x1, y1, HALF_THICKNESS, colour, 112);
-        modelVertex(consumer, matrix, x0, y0, HALF_THICKNESS, colour, 112);
-    }
-
-    private static void modelVertex(VertexConsumer consumer, Matrix4f matrix,
-                                    float x, float y, float z, int colour, int alpha) {
-        consumer.vertex(matrix, x, y, z)
-                .color(red(colour), green(colour), blue(colour), alpha)
-                .endVertex();
+    private static float layerDepth(float time, float phase, float progress) {
+        float drift = layeredDrift(time, phase + 3.11F,
+                0.28F, 0.16F, 0.0058F);
+        return Mth.lerp(progress, CENTRE_Z - HALF_DEPTH,
+                CENTRE_Z + HALF_DEPTH) + drift;
     }
 
     private static float layeredDrift(float time, float phase, float primarySpeed,
                                       float secondarySpeed, float amplitude) {
         float primary = Mth.sin(time * primarySpeed + phase);
-        float secondary = Mth.sin(time * secondarySpeed + phase * 1.611F + 0.83F);
-        return (primary * 0.7F + secondary * 0.3F) * amplitude;
+        float secondary = Mth.sin(time * secondarySpeed + phase * 1.783F + 0.91F);
+        return (primary * 0.68F + secondary * 0.32F) * amplitude;
     }
 
-    private static int filmColour(float time, int band, int x, int y,
-                                  int width, int height) {
-        float relativeX = (x + 0.5F) / width - 0.5F;
-        float relativeY = 0.5F - (y + 0.5F) / height;
-        float radius = Mth.sqrt(relativeX * relativeX + relativeY * relativeY);
-        float angle = Mth.positiveModulo(
-                (float) (Math.atan2(relativeY, relativeX) / (Math.PI * 2.0)), 1.0F);
-        float hue = Mth.positiveModulo(time * 0.036F + band * 0.17F
-                + angle * 0.11F + radius * 0.19F, 1.0F);
-        int film = Mth.hsvToRgb(hue, 0.42F, 0.96F);
-
-        float sweepPhase = Mth.positiveModulo(angle - time * 0.115F
-                + band * 0.21F, 1.0F);
-        float sweepDistance = Math.min(sweepPhase, 1.0F - sweepPhase);
-        float sweep = Mth.clamp((0.115F - sweepDistance) / 0.10F, 0.0F, 1.0F);
-        sweep = sweep * sweep * (3.0F - 2.0F * sweep) * 0.38F;
-        return colour(
-                Mth.floor(Mth.lerp(sweep, red(film), 255.0F)),
-                Mth.floor(Mth.lerp(sweep, green(film), 255.0F)),
-                Mth.floor(Mth.lerp(sweep, blue(film), 255.0F)));
-    }
-
-    private static int colour(int red, int green, int blue) {
-        return red << 16 | green << 8 | blue;
+    private static int filmColor(float time, float offset) {
+        float hue = Mth.positiveModulo(offset + time * 0.036F, 1.0F);
+        return Mth.hsvToRgb(hue, 0.42F, 0.96F);
     }
 
     private static int red(int colour) {
@@ -194,64 +148,132 @@ public final class InvariantObserverItemRenderer extends BlockEntityWithoutLevel
         return colour & 255;
     }
 
-    private static VoxelMask mask() {
-        VoxelMask current = voxelMask;
+    private static void renderSideShell(PoseStack poseStack, VertexConsumer consumer,
+                                        Silhouette mask,
+                                        float rearX, float rearY, float rearZ, int rearColour,
+                                        float frontX, float frontY, float frontZ, int frontColour) {
+        Matrix4f matrix = poseStack.last().pose();
+        float pixelWidth = (MASK_MAX - MASK_MIN) / mask.width();
+        float pixelHeight = (MASK_MAX - MASK_MIN) / mask.height();
+
+        for (int y = 0; y < mask.height(); y++) {
+            float top = MASK_MAX - y * pixelHeight;
+            float bottom = top - pixelHeight;
+            for (int x = 0; x < mask.width(); x++) {
+                if (!mask.solid(x, y)) {
+                    continue;
+                }
+                float left = MASK_MIN + x * pixelWidth;
+                float right = left + pixelWidth;
+                if (!mask.solid(x - 1, y)) {
+                    sideQuad(consumer, matrix, left, bottom, left, top,
+                            rearX, rearY, rearZ, rearColour,
+                            frontX, frontY, frontZ, frontColour);
+                }
+                if (!mask.solid(x + 1, y)) {
+                    sideQuad(consumer, matrix, right, top, right, bottom,
+                            rearX, rearY, rearZ, rearColour,
+                            frontX, frontY, frontZ, frontColour);
+                }
+                if (!mask.solid(x, y - 1)) {
+                    sideQuad(consumer, matrix, right, top, left, top,
+                            rearX, rearY, rearZ, rearColour,
+                            frontX, frontY, frontZ, frontColour);
+                }
+                if (!mask.solid(x, y + 1)) {
+                    sideQuad(consumer, matrix, left, bottom, right, bottom,
+                            rearX, rearY, rearZ, rearColour,
+                            frontX, frontY, frontZ, frontColour);
+                }
+            }
+        }
+    }
+
+    private static void sideQuad(VertexConsumer consumer, Matrix4f matrix,
+                                 float x0, float y0, float x1, float y1,
+                                 float rearX, float rearY, float rearZ, int rearColour,
+                                 float frontX, float frontY, float frontZ, int frontColour) {
+        sideVertex(consumer, matrix, x0 + rearX, y0 + rearY, rearZ, rearColour);
+        sideVertex(consumer, matrix, x1 + rearX, y1 + rearY, rearZ, rearColour);
+        sideVertex(consumer, matrix, x1 + frontX, y1 + frontY, frontZ, frontColour);
+        sideVertex(consumer, matrix, x0 + frontX, y0 + frontY, frontZ, frontColour);
+    }
+
+    private static void sideVertex(VertexConsumer consumer, Matrix4f matrix,
+                                   float x, float y, float z, int colour) {
+        consumer.vertex(matrix, x, y, z)
+                .color(red(colour), green(colour), blue(colour), SIDE_ALPHA)
+                .endVertex();
+    }
+
+    private static Silhouette silhouette() {
+        Silhouette current = silhouette;
         if (current != null) {
             return current;
         }
         synchronized (InvariantObserverItemRenderer.class) {
-            current = voxelMask;
+            current = silhouette;
             if (current == null) {
-                current = loadMask();
-                voxelMask = current;
+                current = loadSilhouette();
+                silhouette = current;
             }
         }
         return current;
     }
 
-    private static VoxelMask loadMask() {
+    private static Silhouette loadSilhouette() {
         try (InputStream stream = Minecraft.getInstance().getResourceManager().open(MASK);
              NativeImage image = NativeImage.read(stream)) {
-            byte[][] bands = new byte[image.getHeight()][image.getWidth()];
+            boolean[][] pixels = new boolean[image.getHeight()][image.getWidth()];
             for (int y = 0; y < image.getHeight(); y++) {
                 for (int x = 0; x < image.getWidth(); x++) {
-                    if (FastColor.ABGR32.alpha(image.getPixelRGBA(x, y)) < 26) {
-                        bands[y][x] = -1;
-                        continue;
-                    }
-                    bands[y][x] = (byte) radialBand(x, y,
-                            image.getWidth(), image.getHeight());
+                    pixels[y][x] = FastColor.ABGR32.alpha(image.getPixelRGBA(x, y)) >= 26;
                 }
             }
-            return new VoxelMask(image.getWidth(), image.getHeight(), bands);
+            return new Silhouette(image.getWidth(), image.getHeight(), pixels);
         } catch (IOException error) {
-            UltimatumMod.LOGGER.error("Could not build Invariant Observer's voxel mask", error);
-            return VoxelMask.EMPTY;
+            UltimatumMod.LOGGER.error("Could not read Invariant Observer's silhouette mask",
+                    error);
+            return Silhouette.EMPTY;
         }
     }
 
-    private static int radialBand(int x, int y, int width, int height) {
-        float relativeX = (x + 0.5F) / width - 0.5F;
-        float relativeY = (y + 0.5F) / height - 0.5F;
-        float radius = Mth.sqrt(relativeX * relativeX + relativeY * relativeY);
-        if (radius >= 0.395F) {
-            return 0;
-        }
-        if (radius >= 0.285F) {
-            return 1;
-        }
-        if (radius >= 0.165F) {
-            return 2;
-        }
-        return 3;
+    private static void texturedPlane(PoseStack poseStack, VertexConsumer consumer,
+                                      float offsetX, float offsetY, float depth,
+                                      int red, int green, int blue, int alpha,
+                                      int packedLight, int packedOverlay) {
+        Matrix4f pose = poseStack.last().pose();
+        Matrix3f normal = poseStack.last().normal();
+
+        vertex(consumer, pose, normal, MASK_MIN + offsetX, MASK_MIN + offsetY,
+                depth, 0.0F, 1.0F, red, green, blue, alpha, packedLight, packedOverlay);
+        vertex(consumer, pose, normal, MASK_MAX + offsetX, MASK_MIN + offsetY,
+                depth, 1.0F, 1.0F, red, green, blue, alpha, packedLight, packedOverlay);
+        vertex(consumer, pose, normal, MASK_MAX + offsetX, MASK_MAX + offsetY,
+                depth, 1.0F, 0.0F, red, green, blue, alpha, packedLight, packedOverlay);
+        vertex(consumer, pose, normal, MASK_MIN + offsetX, MASK_MAX + offsetY,
+                depth, 0.0F, 0.0F, red, green, blue, alpha, packedLight, packedOverlay);
     }
 
-    private record VoxelMask(int width, int height, byte[][] bands) {
-        private static final VoxelMask EMPTY = new VoxelMask(1, 1,
-                new byte[][]{{-1}});
+    private static void vertex(VertexConsumer consumer, Matrix4f pose, Matrix3f normal,
+                               float x, float y, float z, float u, float v,
+                               int red, int green, int blue, int alpha,
+                               int packedLight, int packedOverlay) {
+        consumer.vertex(pose, x, y, z)
+                .color(red, green, blue, alpha)
+                .uv(u, v)
+                .overlayCoords(packedOverlay)
+                .uv2(packedLight)
+                .normal(normal, 0.0F, 0.0F, 1.0F)
+                .endVertex();
+    }
 
-        private int bandAt(int x, int y) {
-            return x >= 0 && y >= 0 && x < width && y < height ? bands[y][x] : -1;
+    private record Silhouette(int width, int height, boolean[][] pixels) {
+        private static final Silhouette EMPTY = new Silhouette(1, 1,
+                new boolean[][]{{false}});
+
+        private boolean solid(int x, int y) {
+            return x >= 0 && y >= 0 && x < width && y < height && pixels[y][x];
         }
     }
 }

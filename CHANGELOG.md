@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.20.1
+
+- Replace the Observer's solid voxel model with Final Conclusion's transparent contour planes
+- Keep the complete 31x31 mask intact on every independently drifting depth layer
+- Reuse the sword's traced halo shader, permanent rainbow film and alpha-boundary side shell
+
 ## 0.20.0
 
 - Replace Invariant Observer's clipped flat mask passes with a true voxel-extruded item model
