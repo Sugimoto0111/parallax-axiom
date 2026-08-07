@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.18.8
+
+- Extrude the supplied sword mask's alpha boundary into a transparent rainbow side shell
+- Keep Final Conclusion visible when its animated contour planes are viewed edge-on
+- Rebuild the side geometry automatically from the active texture after resource reloads
+
 ## 0.18.7
 
 - Match Final Conclusion's contour layers to the observer halo's full moving rainbow palette
