@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.17.1
+
+- Replace Final Conclusion's painted texture with the supplied solid-white silhouette mask
+- Generate the graphite-glass body, pale outline and reflected face entirely in the item renderer
+- Let the procedural outline breathe subtly and intensify together with the attack pulse
+
 ## 0.17.0
 
 - Adopt the supplied 16x16 transparent Final Conclusion texture as a sparse shape mask

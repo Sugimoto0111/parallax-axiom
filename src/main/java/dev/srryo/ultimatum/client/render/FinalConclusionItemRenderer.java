@@ -48,22 +48,55 @@ public final class FinalConclusionItemRenderer extends BlockEntityWithoutLevelRe
         float driftX = Mth.sin(time * 1.31F) * 0.014F;
         float driftY = Mth.cos(time * 1.07F) * 0.011F;
         texturedPlane(poseStack, texture, driftX - 0.018F, driftY + 0.010F,
-                0.478F, 24, LightTexture.FULL_BRIGHT, packedOverlay);
+                0.478F, 118, 128, 136, 18,
+                LightTexture.FULL_BRIGHT, packedOverlay);
         texturedPlane(poseStack, texture, -driftX + 0.016F, -driftY - 0.008F,
-                0.486F, 17, LightTexture.FULL_BRIGHT, packedOverlay);
+                0.486F, 80, 88, 94, 13,
+                LightTexture.FULL_BRIGHT, packedOverlay);
 
-        // Stable material layer: opaque graphite core and translucent white edge.
+        // The source image is now only a solid white silhouette. Its border and
+        // material are generated here, leaving no baked colour in the asset.
+        renderOutline(poseStack, texture, time, attack, packedOverlay);
         texturedPlane(poseStack, texture, 0.0F, 0.0F, 0.500F,
-                255, packedLight, packedOverlay);
+                9, 12, 15, 238, packedLight, packedOverlay);
+        texturedPlane(poseStack, texture, -0.002F, 0.003F, 0.507F,
+                84, 92, 98, 38, LightTexture.FULL_BRIGHT, packedOverlay);
 
         // A barely shifted full-bright reprint reads as reflection. It flares when
         // the player commits an attack, but never introduces an enchantment colour.
-        int reflectionAlpha = 29 + Mth.floor(attack * 108.0F);
+        int reflectionAlpha = 24 + Mth.floor(attack * 116.0F);
         float reflectionShift = 0.006F + attack * 0.012F;
         texturedPlane(poseStack, texture, reflectionShift, reflectionShift,
-                0.522F, reflectionAlpha, LightTexture.FULL_BRIGHT, packedOverlay);
+                0.522F, 235, 241, 244, reflectionAlpha,
+                LightTexture.FULL_BRIGHT, packedOverlay);
 
         renderScan(poseStack, buffers.getBuffer(ObserverRenderTypes.FILM), time, attack);
+    }
+
+    private static void renderOutline(PoseStack poseStack, VertexConsumer texture,
+                                      float time, float attack, int packedOverlay) {
+        float radius = 0.030F + Mth.sin(time * 1.43F) * 0.0025F
+                + attack * 0.006F;
+        int cardinalAlpha = 38 + Mth.floor(attack * 66.0F);
+        int diagonalAlpha = 24 + Mth.floor(attack * 44.0F);
+        float diagonal = radius * 0.72F;
+
+        texturedPlane(poseStack, texture, -radius, 0.0F, 0.492F,
+                232, 239, 242, cardinalAlpha, LightTexture.FULL_BRIGHT, packedOverlay);
+        texturedPlane(poseStack, texture, radius, 0.0F, 0.492F,
+                232, 239, 242, cardinalAlpha, LightTexture.FULL_BRIGHT, packedOverlay);
+        texturedPlane(poseStack, texture, 0.0F, -radius, 0.492F,
+                232, 239, 242, cardinalAlpha, LightTexture.FULL_BRIGHT, packedOverlay);
+        texturedPlane(poseStack, texture, 0.0F, radius, 0.492F,
+                232, 239, 242, cardinalAlpha, LightTexture.FULL_BRIGHT, packedOverlay);
+        texturedPlane(poseStack, texture, -diagonal, -diagonal, 0.490F,
+                198, 207, 212, diagonalAlpha, LightTexture.FULL_BRIGHT, packedOverlay);
+        texturedPlane(poseStack, texture, diagonal, -diagonal, 0.490F,
+                198, 207, 212, diagonalAlpha, LightTexture.FULL_BRIGHT, packedOverlay);
+        texturedPlane(poseStack, texture, -diagonal, diagonal, 0.490F,
+                198, 207, 212, diagonalAlpha, LightTexture.FULL_BRIGHT, packedOverlay);
+        texturedPlane(poseStack, texture, diagonal, diagonal, 0.490F,
+                198, 207, 212, diagonalAlpha, LightTexture.FULL_BRIGHT, packedOverlay);
     }
 
     private static float attackPulse(ItemStack renderedStack) {
@@ -105,7 +138,8 @@ public final class FinalConclusionItemRenderer extends BlockEntityWithoutLevelRe
 
     private static void texturedPlane(PoseStack poseStack, VertexConsumer consumer,
                                       float offsetX, float offsetY, float z,
-                                      int alpha, int packedLight, int packedOverlay) {
+                                      int red, int green, int blue, int alpha,
+                                      int packedLight, int packedOverlay) {
         Matrix4f pose = poseStack.last().pose();
         Matrix3f normal = poseStack.last().normal();
         float minX = offsetX;
@@ -114,31 +148,32 @@ public final class FinalConclusionItemRenderer extends BlockEntityWithoutLevelRe
         float maxY = 1.0F + offsetY;
 
         vertex(consumer, pose, normal, minX, minY, z, 0.0F, 1.0F,
-                alpha, packedLight, packedOverlay, 1.0F);
+                red, green, blue, alpha, packedLight, packedOverlay, 1.0F);
         vertex(consumer, pose, normal, maxX, minY, z, 1.0F, 1.0F,
-                alpha, packedLight, packedOverlay, 1.0F);
+                red, green, blue, alpha, packedLight, packedOverlay, 1.0F);
         vertex(consumer, pose, normal, maxX, maxY, z, 1.0F, 0.0F,
-                alpha, packedLight, packedOverlay, 1.0F);
+                red, green, blue, alpha, packedLight, packedOverlay, 1.0F);
         vertex(consumer, pose, normal, minX, maxY, z, 0.0F, 0.0F,
-                alpha, packedLight, packedOverlay, 1.0F);
+                red, green, blue, alpha, packedLight, packedOverlay, 1.0F);
 
         // Render the reverse face for third-person hands and item frames.
         vertex(consumer, pose, normal, minX, maxY, z - 0.001F, 0.0F, 0.0F,
-                alpha, packedLight, packedOverlay, -1.0F);
+                red, green, blue, alpha, packedLight, packedOverlay, -1.0F);
         vertex(consumer, pose, normal, maxX, maxY, z - 0.001F, 1.0F, 0.0F,
-                alpha, packedLight, packedOverlay, -1.0F);
+                red, green, blue, alpha, packedLight, packedOverlay, -1.0F);
         vertex(consumer, pose, normal, maxX, minY, z - 0.001F, 1.0F, 1.0F,
-                alpha, packedLight, packedOverlay, -1.0F);
+                red, green, blue, alpha, packedLight, packedOverlay, -1.0F);
         vertex(consumer, pose, normal, minX, minY, z - 0.001F, 0.0F, 1.0F,
-                alpha, packedLight, packedOverlay, -1.0F);
+                red, green, blue, alpha, packedLight, packedOverlay, -1.0F);
     }
 
     private static void vertex(VertexConsumer consumer, Matrix4f pose,
                                Matrix3f normal, float x, float y, float z,
-                               float u, float v, int alpha, int packedLight,
-                               int packedOverlay, float normalZ) {
+                               float u, float v, int red, int green, int blue,
+                               int alpha, int packedLight, int packedOverlay,
+                               float normalZ) {
         consumer.vertex(pose, x, y, z)
-                .color(255, 255, 255, alpha)
+                .color(red, green, blue, alpha)
                 .uv(u, v)
                 .overlayCoords(packedOverlay)
                 .uv2(packedLight)
