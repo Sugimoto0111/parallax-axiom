@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.20.0
+
+- Replace Invariant Observer's clipped flat mask passes with a true voxel-extruded item model
+- Convert every supplied white pixel into front, back and exposed side geometry
+- Preserve each complete ring while giving the four optical depths independent motion
+- Calculate the permanent rainbow film and moving white focus directly across the 3D model
+
 ## 0.19.0
 
 - Add the supplied 31x31 white mask as Invariant Observer's inventory texture
