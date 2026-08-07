@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.18.6
+
+- Colour the independent contour layers with a restrained cyan-to-blue-violet depth palette
+- Give each layer a separate slow return-to-white cycle without restoring a rainbow effect
+
 ## 0.18.5
 
 - Triple the visible horizontal and vertical drift of Final Conclusion's contour layers

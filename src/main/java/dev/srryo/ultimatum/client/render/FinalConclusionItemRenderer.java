@@ -23,6 +23,15 @@ public final class FinalConclusionItemRenderer extends BlockEntityWithoutLevelRe
     private static final float CENTRE_Z = 0.500F;
     private static final float HALF_DEPTH = 0.055F;
     private static final int[] DEPTH_ALPHA = {76, 24, 20, 18, 20, 24, 76};
+    private static final int[][] DEPTH_COLOUR = {
+            {118, 224, 255},
+            {146, 198, 255},
+            {190, 172, 255},
+            {238, 232, 255},
+            {208, 178, 255},
+            {154, 206, 255},
+            {126, 234, 255}
+    };
 
     public FinalConclusionItemRenderer() {
         this(Minecraft.getInstance().getBlockEntityRenderDispatcher(),
@@ -56,8 +65,14 @@ public final class FinalConclusionItemRenderer extends BlockEntityWithoutLevelRe
                     0.29F, 0.17F, 0.0065F);
             float depth = Mth.lerp(progress, CENTRE_Z - HALF_DEPTH,
                     CENTRE_Z + HALF_DEPTH) + depthDrift;
+            float whiteBlend = 0.16F
+                    + (Mth.sin(time * 0.31F + phase * 0.83F) * 0.5F + 0.5F) * 0.22F;
+            int[] baseColour = DEPTH_COLOUR[layer];
+            int red = Mth.floor(Mth.lerp(whiteBlend, baseColour[0], 255.0F));
+            int green = Mth.floor(Mth.lerp(whiteBlend, baseColour[1], 255.0F));
+            int blue = Mth.floor(Mth.lerp(whiteBlend, baseColour[2], 255.0F));
             texturedPlane(poseStack, trace, driftX, driftY, depth,
-                    255, 255, 255, DEPTH_ALPHA[layer],
+                    red, green, blue, DEPTH_ALPHA[layer],
                     LightTexture.FULL_BRIGHT, packedOverlay);
         }
 
