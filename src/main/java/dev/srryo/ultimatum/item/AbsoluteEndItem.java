@@ -1,8 +1,10 @@
 package dev.srryo.ultimatum.item;
 
 import dev.srryo.ultimatum.UltimatumMod;
+import dev.srryo.ultimatum.client.render.FinalConclusionItemRenderer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -12,13 +14,28 @@ import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.item.Tier;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
+import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 public final class AbsoluteEndItem extends SwordItem {
     public AbsoluteEndItem(Tier tier, int attackDamage, float attackSpeed, Properties properties) {
         super(tier, attackDamage, attackSpeed, properties);
+    }
+
+    @Override
+    public void initializeClient(Consumer<IClientItemExtensions> consumer) {
+        consumer.accept(new IClientItemExtensions() {
+            private final BlockEntityWithoutLevelRenderer renderer =
+                    new FinalConclusionItemRenderer();
+
+            @Override
+            public BlockEntityWithoutLevelRenderer getCustomRenderer() {
+                return renderer;
+            }
+        });
     }
 
     @Override
@@ -65,6 +82,6 @@ public final class AbsoluteEndItem extends SwordItem {
 
     @Override
     public boolean isFoil(ItemStack stack) {
-        return true;
+        return false;
     }
 }

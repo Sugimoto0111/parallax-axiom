@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.17.0
+
+- Adopt the supplied 16x16 transparent Final Conclusion texture as a sparse shape mask
+- Add a fully monochrome custom renderer with faint parallax impressions and a moving blade scan
+- Make the edge reflection flare with the vanilla attack swing across hand, GUI and world contexts
+- Remove the vanilla purple enchantment glint from Final Conclusion
+
 ## 0.16.0
 
 - Replace the vanilla selected-item-name HUD for Final Conclusion and Invariant Observer only
