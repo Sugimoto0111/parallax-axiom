@@ -42,24 +42,27 @@ public final class FinalConclusionItemRenderer extends BlockEntityWithoutLevelRe
                              int packedLight, int packedOverlay) {
         float time = (Util.getMillis() % 600_000L) / 1000.0F;
         float attack = attackPulse(stack);
-        VertexConsumer texture = buffers.getBuffer(RenderType.entityTranslucent(TEXTURE));
+        // This no-cull, colour-only translucent pass preserves submission order
+        // without writing per-layer depth into the scene.
+        VertexConsumer texture = buffers.getBuffer(
+                RenderType.entityTranslucentEmissive(TEXTURE));
 
         // Two very faint displaced impressions create depth without adding colour.
         float driftX = Mth.sin(time * 1.31F) * 0.014F;
         float driftY = Mth.cos(time * 1.07F) * 0.011F;
         texturedPlane(poseStack, texture, driftX - 0.018F, driftY + 0.010F,
-                0.478F, 118, 128, 136, 18,
+                118, 128, 136, 18,
                 LightTexture.FULL_BRIGHT, packedOverlay);
         texturedPlane(poseStack, texture, -driftX + 0.016F, -driftY - 0.008F,
-                0.486F, 80, 88, 94, 13,
+                80, 88, 94, 13,
                 LightTexture.FULL_BRIGHT, packedOverlay);
 
         // The source image is now only a solid white silhouette. Its border and
         // material are generated here, leaving no baked colour in the asset.
         renderOutline(poseStack, texture, time, attack, packedOverlay);
-        texturedPlane(poseStack, texture, 0.0F, 0.0F, 0.500F,
+        texturedPlane(poseStack, texture, 0.0F, 0.0F,
                 9, 12, 15, 238, packedLight, packedOverlay);
-        texturedPlane(poseStack, texture, -0.002F, 0.003F, 0.507F,
+        texturedPlane(poseStack, texture, -0.002F, 0.003F,
                 84, 92, 98, 38, LightTexture.FULL_BRIGHT, packedOverlay);
 
         // A barely shifted full-bright reprint reads as reflection. It flares when
@@ -67,7 +70,7 @@ public final class FinalConclusionItemRenderer extends BlockEntityWithoutLevelRe
         int reflectionAlpha = 24 + Mth.floor(attack * 116.0F);
         float reflectionShift = 0.006F + attack * 0.012F;
         texturedPlane(poseStack, texture, reflectionShift, reflectionShift,
-                0.522F, 235, 241, 244, reflectionAlpha,
+                235, 241, 244, reflectionAlpha,
                 LightTexture.FULL_BRIGHT, packedOverlay);
 
         renderScan(poseStack, buffers.getBuffer(ObserverRenderTypes.FILM), time, attack);
@@ -81,21 +84,21 @@ public final class FinalConclusionItemRenderer extends BlockEntityWithoutLevelRe
         int diagonalAlpha = 24 + Mth.floor(attack * 44.0F);
         float diagonal = radius * 0.72F;
 
-        texturedPlane(poseStack, texture, -radius, 0.0F, 0.492F,
+        texturedPlane(poseStack, texture, -radius, 0.0F,
                 232, 239, 242, cardinalAlpha, LightTexture.FULL_BRIGHT, packedOverlay);
-        texturedPlane(poseStack, texture, radius, 0.0F, 0.492F,
+        texturedPlane(poseStack, texture, radius, 0.0F,
                 232, 239, 242, cardinalAlpha, LightTexture.FULL_BRIGHT, packedOverlay);
-        texturedPlane(poseStack, texture, 0.0F, -radius, 0.492F,
+        texturedPlane(poseStack, texture, 0.0F, -radius,
                 232, 239, 242, cardinalAlpha, LightTexture.FULL_BRIGHT, packedOverlay);
-        texturedPlane(poseStack, texture, 0.0F, radius, 0.492F,
+        texturedPlane(poseStack, texture, 0.0F, radius,
                 232, 239, 242, cardinalAlpha, LightTexture.FULL_BRIGHT, packedOverlay);
-        texturedPlane(poseStack, texture, -diagonal, -diagonal, 0.490F,
+        texturedPlane(poseStack, texture, -diagonal, -diagonal,
                 198, 207, 212, diagonalAlpha, LightTexture.FULL_BRIGHT, packedOverlay);
-        texturedPlane(poseStack, texture, diagonal, -diagonal, 0.490F,
+        texturedPlane(poseStack, texture, diagonal, -diagonal,
                 198, 207, 212, diagonalAlpha, LightTexture.FULL_BRIGHT, packedOverlay);
-        texturedPlane(poseStack, texture, -diagonal, diagonal, 0.490F,
+        texturedPlane(poseStack, texture, -diagonal, diagonal,
                 198, 207, 212, diagonalAlpha, LightTexture.FULL_BRIGHT, packedOverlay);
-        texturedPlane(poseStack, texture, diagonal, diagonal, 0.490F,
+        texturedPlane(poseStack, texture, diagonal, diagonal,
                 198, 207, 212, diagonalAlpha, LightTexture.FULL_BRIGHT, packedOverlay);
     }
 
@@ -125,12 +128,9 @@ public final class FinalConclusionItemRenderer extends BlockEntityWithoutLevelRe
         int alpha = 42 + Mth.floor(attack * 136.0F);
         Matrix4f matrix = poseStack.last().pose();
 
-        // Narrow diamonds aligned with the diagonal blade. The second is mirrored
-        // through the material's centre so the scan sits above either viewed face.
+        // The material is physically flat; NO_CULL makes this visible from either face.
         scanDiamond(consumer, matrix, centerX, centerY, halfLength, halfWidth,
-                0.540F, alpha);
-        scanDiamond(consumer, matrix, centerX, centerY, halfLength, halfWidth,
-                0.460F, alpha);
+                0.500F, alpha);
     }
 
     private static void scanDiamond(VertexConsumer consumer, Matrix4f matrix,
@@ -147,7 +147,7 @@ public final class FinalConclusionItemRenderer extends BlockEntityWithoutLevelRe
     }
 
     private static void texturedPlane(PoseStack poseStack, VertexConsumer consumer,
-                                      float offsetX, float offsetY, float z,
+                                      float offsetX, float offsetY,
                                       int red, int green, int blue, int alpha,
                                       int packedLight, int packedOverlay) {
         Matrix4f pose = poseStack.last().pose();
@@ -156,28 +156,15 @@ public final class FinalConclusionItemRenderer extends BlockEntityWithoutLevelRe
         float minY = offsetY;
         float maxX = 1.0F + offsetX;
         float maxY = 1.0F + offsetY;
-        float frontZ = z == 0.500F ? 0.5005F : z;
-        float backZ = z == 0.500F ? 0.4995F : 1.0F - z;
 
-        vertex(consumer, pose, normal, minX, minY, frontZ, 0.0F, 1.0F,
+        vertex(consumer, pose, normal, minX, minY, 0.500F, 0.0F, 1.0F,
                 red, green, blue, alpha, packedLight, packedOverlay, 1.0F);
-        vertex(consumer, pose, normal, maxX, minY, frontZ, 1.0F, 1.0F,
+        vertex(consumer, pose, normal, maxX, minY, 0.500F, 1.0F, 1.0F,
                 red, green, blue, alpha, packedLight, packedOverlay, 1.0F);
-        vertex(consumer, pose, normal, maxX, maxY, frontZ, 1.0F, 0.0F,
+        vertex(consumer, pose, normal, maxX, maxY, 0.500F, 1.0F, 0.0F,
                 red, green, blue, alpha, packedLight, packedOverlay, 1.0F);
-        vertex(consumer, pose, normal, minX, maxY, frontZ, 0.0F, 0.0F,
+        vertex(consumer, pose, normal, minX, maxY, 0.500F, 0.0F, 0.0F,
                 red, green, blue, alpha, packedLight, packedOverlay, 1.0F);
-
-        // Mirror every logical layer around Z=0.5. Merely reversing the polygon
-        // would invert the layer order and let the rear outline occlude the body.
-        vertex(consumer, pose, normal, minX, maxY, backZ, 0.0F, 0.0F,
-                red, green, blue, alpha, packedLight, packedOverlay, -1.0F);
-        vertex(consumer, pose, normal, maxX, maxY, backZ, 1.0F, 0.0F,
-                red, green, blue, alpha, packedLight, packedOverlay, -1.0F);
-        vertex(consumer, pose, normal, maxX, minY, backZ, 1.0F, 1.0F,
-                red, green, blue, alpha, packedLight, packedOverlay, -1.0F);
-        vertex(consumer, pose, normal, minX, minY, backZ, 0.0F, 1.0F,
-                red, green, blue, alpha, packedLight, packedOverlay, -1.0F);
     }
 
     private static void vertex(VertexConsumer consumer, Matrix4f pose,

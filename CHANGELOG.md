@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.17.3
+
+- Collapse the weapon's visual layers onto one physical plane
+- Composite body, outline and reflection by draw order without writing self-depth
+- Remove detached black mask pixels visible from extreme side angles
+
 ## 0.17.2
 
 - Mirror every material layer around the sword's centre plane for identical two-sided depth
