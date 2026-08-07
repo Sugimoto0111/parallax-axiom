@@ -399,7 +399,7 @@ public final class ClientParallaxTooltip {
             return Mth.hsvToRgb(hue, 0.43F, brightness);
         }
 
-        if (line == 1 || line == 2) {
+        if (line == 1) {
             float sweep = Mth.positiveModulo(timeSeconds / 3.1F
                     + line * 0.19F, 1.0F);
             float distance = Math.abs(position - sweep);
@@ -411,11 +411,17 @@ public final class ClientParallaxTooltip {
             return mixRgb(0x98A3AE, film, 0.78F * highlight);
         }
 
-        float pulse = 0.5F + 0.5F * Mth.sin(timeSeconds * 2.4F
-                - character * 0.24F);
-        int film = Mth.hsvToRgb(Mth.positiveModulo(timeSeconds / 9.0F
-                + position * 0.18F, 1.0F), 0.42F, 0.92F);
-        return mixRgb(0x3B7380, film, 0.25F + pulse * 0.48F);
+        if (line == 2) {
+            // The closing observation is the still reference point of the tooltip.
+            return 0x98A3AE;
+        }
+
+        // The Shift function line carries the full moving thin-film spectrum.
+        float hue = Mth.positiveModulo(timeSeconds / 4.8F
+                + position * 0.55F, 1.0F);
+        float brightness = 0.91F + 0.09F * Mth.sin(
+                timeSeconds * 3.0F - character * 0.42F);
+        return Mth.hsvToRgb(hue, 0.50F, brightness);
     }
 
     private static int mixRgb(int from, int to, float amount) {

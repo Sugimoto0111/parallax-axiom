@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.20.5
+
+- Keep Invariant Observer's closing observation in a fixed neutral color
+- Give its Shift function line an unmistakable animated thin-film rainbow
+
 ## 0.20.4
 
 - Replace Invariant Observer's 31x31 one-pixel line mask with the supplied 63x63 band mask
