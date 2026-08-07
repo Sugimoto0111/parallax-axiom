@@ -73,6 +73,13 @@ public final class FinalConclusionItemRenderer extends BlockEntityWithoutLevelRe
                 235, 241, 244, reflectionAlpha,
                 LightTexture.FULL_BRIGHT, packedOverlay);
 
+        // The same white silhouette is reused as a window into a procedural,
+        // camera-ray-projected interior. It contains no baked scenery or colour.
+        FinalConclusionShaders.prepare(time, attack, context);
+        VertexConsumer interior = buffers.getBuffer(FinalConclusionRenderTypes.INTERIOR);
+        texturedPlane(poseStack, interior, 0.0F, 0.0F,
+                255, 255, 255, 255, LightTexture.FULL_BRIGHT, packedOverlay);
+
         renderScan(poseStack, buffers.getBuffer(ObserverRenderTypes.FILM), time, attack);
     }
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.18.0
+
+- Add a dedicated view-ray-projected shader for Final Conclusion's inner space
+- Reuse the solid-white sword texture as both silhouette and procedural interior mask
+- Generate achromatic refracted contours, displaced echoes and floating focus rings without new image assets
+- Anchor the virtual panorama to camera yaw and pitch so its contents shift with viewing angle
+
 ## 0.17.3
 
 - Collapse the weapon's visual layers onto one physical plane
