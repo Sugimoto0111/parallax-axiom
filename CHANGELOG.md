@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.17.2
+
+- Mirror every material layer around the sword's centre plane for identical two-sided depth
+- Prevent the rear outline and parallax layers from occluding the graphite body
+- Render the moving blade scan above both faces
+
 ## 0.17.1
 
 - Replace Final Conclusion's painted texture with the supplied solid-white silhouette mask

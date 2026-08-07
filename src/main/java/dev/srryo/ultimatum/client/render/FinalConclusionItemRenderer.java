@@ -125,14 +125,24 @@ public final class FinalConclusionItemRenderer extends BlockEntityWithoutLevelRe
         int alpha = 42 + Mth.floor(attack * 136.0F);
         Matrix4f matrix = poseStack.last().pose();
 
-        // Narrow diamond aligned with the diagonal blade.
-        consumer.vertex(matrix, centerX - halfLength, centerY - halfLength, 0.540F)
+        // Narrow diamonds aligned with the diagonal blade. The second is mirrored
+        // through the material's centre so the scan sits above either viewed face.
+        scanDiamond(consumer, matrix, centerX, centerY, halfLength, halfWidth,
+                0.540F, alpha);
+        scanDiamond(consumer, matrix, centerX, centerY, halfLength, halfWidth,
+                0.460F, alpha);
+    }
+
+    private static void scanDiamond(VertexConsumer consumer, Matrix4f matrix,
+                                    float centerX, float centerY, float halfLength,
+                                    float halfWidth, float z, int alpha) {
+        consumer.vertex(matrix, centerX - halfLength, centerY - halfLength, z)
                 .color(255, 255, 255, 0).endVertex();
-        consumer.vertex(matrix, centerX - halfWidth, centerY + halfWidth, 0.540F)
+        consumer.vertex(matrix, centerX - halfWidth, centerY + halfWidth, z)
                 .color(255, 255, 255, alpha).endVertex();
-        consumer.vertex(matrix, centerX + halfLength, centerY + halfLength, 0.540F)
+        consumer.vertex(matrix, centerX + halfLength, centerY + halfLength, z)
                 .color(255, 255, 255, 0).endVertex();
-        consumer.vertex(matrix, centerX + halfWidth, centerY - halfWidth, 0.540F)
+        consumer.vertex(matrix, centerX + halfWidth, centerY - halfWidth, z)
                 .color(255, 255, 255, alpha).endVertex();
     }
 
@@ -146,24 +156,27 @@ public final class FinalConclusionItemRenderer extends BlockEntityWithoutLevelRe
         float minY = offsetY;
         float maxX = 1.0F + offsetX;
         float maxY = 1.0F + offsetY;
+        float frontZ = z == 0.500F ? 0.5005F : z;
+        float backZ = z == 0.500F ? 0.4995F : 1.0F - z;
 
-        vertex(consumer, pose, normal, minX, minY, z, 0.0F, 1.0F,
+        vertex(consumer, pose, normal, minX, minY, frontZ, 0.0F, 1.0F,
                 red, green, blue, alpha, packedLight, packedOverlay, 1.0F);
-        vertex(consumer, pose, normal, maxX, minY, z, 1.0F, 1.0F,
+        vertex(consumer, pose, normal, maxX, minY, frontZ, 1.0F, 1.0F,
                 red, green, blue, alpha, packedLight, packedOverlay, 1.0F);
-        vertex(consumer, pose, normal, maxX, maxY, z, 1.0F, 0.0F,
+        vertex(consumer, pose, normal, maxX, maxY, frontZ, 1.0F, 0.0F,
                 red, green, blue, alpha, packedLight, packedOverlay, 1.0F);
-        vertex(consumer, pose, normal, minX, maxY, z, 0.0F, 0.0F,
+        vertex(consumer, pose, normal, minX, maxY, frontZ, 0.0F, 0.0F,
                 red, green, blue, alpha, packedLight, packedOverlay, 1.0F);
 
-        // Render the reverse face for third-person hands and item frames.
-        vertex(consumer, pose, normal, minX, maxY, z - 0.001F, 0.0F, 0.0F,
+        // Mirror every logical layer around Z=0.5. Merely reversing the polygon
+        // would invert the layer order and let the rear outline occlude the body.
+        vertex(consumer, pose, normal, minX, maxY, backZ, 0.0F, 0.0F,
                 red, green, blue, alpha, packedLight, packedOverlay, -1.0F);
-        vertex(consumer, pose, normal, maxX, maxY, z - 0.001F, 1.0F, 0.0F,
+        vertex(consumer, pose, normal, maxX, maxY, backZ, 1.0F, 0.0F,
                 red, green, blue, alpha, packedLight, packedOverlay, -1.0F);
-        vertex(consumer, pose, normal, maxX, minY, z - 0.001F, 1.0F, 1.0F,
+        vertex(consumer, pose, normal, maxX, minY, backZ, 1.0F, 1.0F,
                 red, green, blue, alpha, packedLight, packedOverlay, -1.0F);
-        vertex(consumer, pose, normal, minX, minY, z - 0.001F, 0.0F, 1.0F,
+        vertex(consumer, pose, normal, minX, minY, backZ, 0.0F, 1.0F,
                 red, green, blue, alpha, packedLight, packedOverlay, -1.0F);
     }
 
