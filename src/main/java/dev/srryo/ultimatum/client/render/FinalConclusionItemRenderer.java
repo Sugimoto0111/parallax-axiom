@@ -83,24 +83,6 @@ public final class FinalConclusionItemRenderer extends BlockEntityWithoutLevelRe
                     LightTexture.FULL_BRIGHT, packedOverlay);
         }
 
-        // The stacked planes still have zero projected area when viewed exactly along
-        // their face. Extrude only the texture's alpha boundary between the independently
-        // moving outer layers, producing a visible side shell without filling the blade.
-        int lastLayer = DEPTH_ALPHA.length - 1;
-        float rearPhase = layerPhase(0);
-        float frontPhase = layerPhase(lastLayer);
-        float rearX = layerX(time, rearPhase);
-        float rearY = layerY(time, rearPhase);
-        float rearZ = layerDepth(time, rearPhase, 0.0F);
-        float frontX = layerX(time, frontPhase);
-        float frontY = layerY(time, frontPhase);
-        float frontZ = layerDepth(time, frontPhase, 1.0F);
-        int rearSideColour = filmColor(time, 0.0F);
-        int frontSideColour = filmColor(time, lastLayer * 0.13F);
-        renderSideShell(poseStack, buffers.getBuffer(ObserverRenderTypes.FILM),
-                silhouette(), rearX, rearY, rearZ, rearSideColour,
-                frontX, frontY, frontZ, frontSideColour);
-
         // The two delayed refraction echoes sit just outside the front and back faces,
         // making their separation visible without filling the transparent centre.
         float driftX = Mth.sin(time * 1.13F) * 0.006F;
@@ -115,6 +97,24 @@ public final class FinalConclusionItemRenderer extends BlockEntityWithoutLevelRe
                 CENTRE_Z + HALF_DEPTH + 0.008F,
                 red(frontColour), green(frontColour), blue(frontColour), 27,
                 LightTexture.FULL_BRIGHT, packedOverlay);
+
+        // Finish every textured trace before requesting the position-colour buffer.
+        // Reusing a consumer after that format switch corrupts the outer planes into
+        // unmasked quads. The side shell is therefore always the final pass.
+        int lastLayer = DEPTH_ALPHA.length - 1;
+        float rearPhase = layerPhase(0);
+        float frontPhase = layerPhase(lastLayer);
+        float rearX = layerX(time, rearPhase);
+        float rearY = layerY(time, rearPhase);
+        float rearZ = layerDepth(time, rearPhase, 0.0F);
+        float frontX = layerX(time, frontPhase);
+        float frontY = layerY(time, frontPhase);
+        float frontZ = layerDepth(time, frontPhase, 1.0F);
+        int rearSideColour = filmColor(time, 0.0F);
+        int frontSideColour = filmColor(time, lastLayer * 0.13F);
+        renderSideShell(poseStack, buffers.getBuffer(ObserverRenderTypes.FILM),
+                silhouette(), rearX, rearY, rearZ, rearSideColour,
+                frontX, frontY, frontZ, frontSideColour);
     }
 
     private static float layerPhase(int layer) {

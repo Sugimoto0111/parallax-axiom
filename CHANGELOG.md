@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.18.9
+
+- Finish every textured contour pass before switching to the side-shell vertex format
+- Prevent the front and rear contour layers from becoming unmasked white rectangles
+
 ## 0.18.8
 
 - Extrude the supplied sword mask's alpha boundary into a transparent rainbow side shell
