@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.20.2
+
+- Keep all Observer depth layers on one spatial rainbow instead of adding complementary tints into white
+- Expand the 31x31 mask by a restrained one-pixel shader halo for small inventory rendering
+- Increase film saturation while retaining the sword-style layered contour geometry
+
 ## 0.20.1
 
 - Replace the Observer's solid voxel model with Final Conclusion's transparent contour planes

@@ -62,7 +62,7 @@ public final class InvariantObserverItemRenderer extends BlockEntityWithoutLevel
                              PoseStack poseStack, MultiBufferSource buffers,
                              int packedLight, int packedOverlay) {
         float time = (Util.getMillis() % 600_000L) / 1000.0F;
-        FinalConclusionShaders.prepare(time, 1.0F);
+        InvariantObserverShaders.prepare(time);
         VertexConsumer trace = buffers.getBuffer(InvariantObserverRenderTypes.TRACE);
 
         // Keep the complete supplied image on every plane, exactly like Final
@@ -73,23 +73,20 @@ public final class InvariantObserverItemRenderer extends BlockEntityWithoutLevel
             float driftX = layerX(time, phase);
             float driftY = layerY(time, phase);
             float depth = layerDepth(time, phase, progress);
-            int colour = filmColor(time, layer * 0.13F);
             texturedPlane(poseStack, trace, driftX, driftY, depth,
-                    red(colour), green(colour), blue(colour), DEPTH_ALPHA[layer],
+                    255, 255, 255, DEPTH_ALPHA[layer],
                     LightTexture.FULL_BRIGHT, packedOverlay);
         }
 
         float echoX = Mth.sin(time * 1.07F) * 0.005F;
         float echoY = Mth.cos(time * 0.91F) * 0.004F;
-        int rearEcho = filmColor(time, 0.83F);
-        int frontEcho = filmColor(time, 0.39F);
         texturedPlane(poseStack, trace, echoX - 0.005F, echoY + 0.003F,
                 CENTRE_Z - HALF_DEPTH - 0.007F,
-                red(rearEcho), green(rearEcho), blue(rearEcho), 38,
+                255, 255, 255, 38,
                 LightTexture.FULL_BRIGHT, packedOverlay);
         texturedPlane(poseStack, trace, -echoX + 0.004F, -echoY - 0.003F,
                 CENTRE_Z + HALF_DEPTH + 0.007F,
-                red(frontEcho), green(frontEcho), blue(frontEcho), 25,
+                255, 255, 255, 25,
                 LightTexture.FULL_BRIGHT, packedOverlay);
 
         // As on the sword, the alpha boundary alone connects the moving outer planes.
@@ -97,12 +94,13 @@ public final class InvariantObserverItemRenderer extends BlockEntityWithoutLevel
         int lastLayer = DEPTH_ALPHA.length - 1;
         float rearPhase = layerPhase(0);
         float frontPhase = layerPhase(lastLayer);
+        int sideColour = filmColor(time);
         renderSideShell(poseStack, buffers.getBuffer(ObserverRenderTypes.FILM), silhouette(),
                 layerX(time, rearPhase), layerY(time, rearPhase),
-                layerDepth(time, rearPhase, 0.0F), filmColor(time, 0.0F),
+                layerDepth(time, rearPhase, 0.0F), sideColour,
                 layerX(time, frontPhase), layerY(time, frontPhase),
                 layerDepth(time, frontPhase, 1.0F),
-                filmColor(time, lastLayer * 0.13F));
+                sideColour);
     }
 
     private static float layerPhase(int layer) {
@@ -131,8 +129,8 @@ public final class InvariantObserverItemRenderer extends BlockEntityWithoutLevel
         return (primary * 0.68F + secondary * 0.32F) * amplitude;
     }
 
-    private static int filmColor(float time, float offset) {
-        float hue = Mth.positiveModulo(offset + time * 0.036F, 1.0F);
+    private static int filmColor(float time) {
+        float hue = Mth.positiveModulo(time * 0.036F, 1.0F);
         return Mth.hsvToRgb(hue, 0.42F, 0.96F);
     }
 
