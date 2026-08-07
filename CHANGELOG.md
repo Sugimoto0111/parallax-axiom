@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.18.4
+
+- Give every contour-depth layer its own smooth pseudo-random drift
+- Vary horizontal, vertical and depth motion independently without destabilizing the sword volume
+
 ## 0.18.3
 
 - Give Final Conclusion a seven-layer contour volume instead of one flat trace plane

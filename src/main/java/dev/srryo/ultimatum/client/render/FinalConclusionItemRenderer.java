@@ -48,9 +48,15 @@ public final class FinalConclusionItemRenderer extends BlockEntityWithoutLevelRe
         // view separates them into a transparent wire-like volume.
         for (int layer = 0; layer < DEPTH_ALPHA.length; layer++) {
             float progress = layer / (float) (DEPTH_ALPHA.length - 1);
+            float phase = layer * 2.431F + 0.73F;
+            float driftX = layeredDrift(time, phase, 0.43F, 0.19F, 0.0046F);
+            float driftY = layeredDrift(time, phase + 1.67F,
+                    0.37F, 0.23F, 0.0038F);
+            float depthDrift = layeredDrift(time, phase + 3.11F,
+                    0.29F, 0.17F, 0.0032F);
             float depth = Mth.lerp(progress, CENTRE_Z - HALF_DEPTH,
-                    CENTRE_Z + HALF_DEPTH);
-            texturedPlane(poseStack, trace, 0.0F, 0.0F, depth,
+                    CENTRE_Z + HALF_DEPTH) + depthDrift;
+            texturedPlane(poseStack, trace, driftX, driftY, depth,
                     255, 255, 255, DEPTH_ALPHA[layer],
                     LightTexture.FULL_BRIGHT, packedOverlay);
         }
@@ -65,6 +71,13 @@ public final class FinalConclusionItemRenderer extends BlockEntityWithoutLevelRe
         texturedPlane(poseStack, trace, -driftX + 0.005F, -driftY - 0.003F,
                 CENTRE_Z + HALF_DEPTH + 0.008F,
                 112, 112, 112, 27, LightTexture.FULL_BRIGHT, packedOverlay);
+    }
+
+    private static float layeredDrift(float time, float phase, float primarySpeed,
+                                      float secondarySpeed, float amplitude) {
+        float primary = Mth.sin(time * primarySpeed + phase);
+        float secondary = Mth.sin(time * secondarySpeed + phase * 1.783F + 0.91F);
+        return (primary * 0.68F + secondary * 0.32F) * amplitude;
     }
 
     private static float attackPulse(ItemStack renderedStack) {
