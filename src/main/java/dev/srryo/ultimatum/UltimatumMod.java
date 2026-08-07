@@ -9,8 +9,6 @@ import dev.srryo.ultimatum.mobility.ArtifactReachService;
 import dev.srryo.ultimatum.mobility.ArtifactUtilityService;
 import dev.srryo.ultimatum.kill.KillService;
 import dev.srryo.ultimatum.network.UltimatumNetwork;
-import dev.srryo.ultimatum.ritual.AcquisitionRitualService;
-import dev.srryo.ultimatum.ritual.RitualRegistries;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
@@ -38,8 +36,6 @@ public final class UltimatumMod {
             new ArtifactReachService();
     public static final ArtifactUtilityService ARTIFACT_UTILITY_SERVICE =
             new ArtifactUtilityService();
-    public static final AcquisitionRitualService ACQUISITION_RITUAL_SERVICE =
-            new AcquisitionRitualService();
 
     private static final DeferredRegister<Item> ITEMS =
             DeferredRegister.create(ForgeRegistries.ITEMS, MOD_ID);
@@ -55,7 +51,6 @@ public final class UltimatumMod {
         UltimatumNetwork.register();
         IEventBus modBus = context.getModEventBus();
         ITEMS.register(modBus);
-        RitualRegistries.register(modBus);
         modBus.addListener(this::addCreativeTabContents);
         modBus.addListener(this::registerGameTests);
         MinecraftForge.EVENT_BUS.register(KILL_SERVICE);
@@ -63,7 +58,6 @@ public final class UltimatumMod {
         MinecraftForge.EVENT_BUS.register(ARTIFACT_MOBILITY_SERVICE);
         MinecraftForge.EVENT_BUS.register(ARTIFACT_REACH_SERVICE);
         MinecraftForge.EVENT_BUS.register(ARTIFACT_UTILITY_SERVICE);
-        MinecraftForge.EVENT_BUS.register(ACQUISITION_RITUAL_SERVICE);
     }
 
     private void addCreativeTabContents(BuildCreativeModeTabContentsEvent event) {

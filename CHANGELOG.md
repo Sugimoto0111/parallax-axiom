@@ -1,14 +1,5 @@
 # Changelog
 
-## 0.21.0
-
-- Add a data-driven acquisition altar to the End exit-portal podium
-- Require eleven varieties of vanilla endgame offerings for Invariant Observer
-- Require twelve heavier offerings and a nearby worn Observer for Final Conclusion
-- Float and lock reserved offerings during the ritual, returning them if its catalyst leaves
-- Keep the ritual heartbeat alive even when another mod replaces Forge's event bus
-- Add a GameTest covering complete offering consumption and single-result creation
-
 ## 0.20.6
 
 - Assign tooltip animation by semantic role instead of a shared line number
