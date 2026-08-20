@@ -1,0 +1,35 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.srryo.parallaxaxiom.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "plugin": "dev.srryo.parallaxaxiom.mixin.plugin.ParallaxAxiomMixinPlugin",
+  "refmap": "parallax_axiom.refmap.json",
+  "mixins": [
+    "EntityInvincibilityMixin",
+    "EntityTickListTombstoneMixin",
+    "LivingEntityInvincibilityMixin",
+    "LivingEntityExecutionAnimationMixin",
+    "LivingEntityObservationMixin",
+    "MinecraftServerTickMixin",
+    "PersistentEntitySectionManagerMixin",
+    "PlayerInvincibilityMixin",
+    "TransientEntitySectionManagerTombstoneMixin",
+    "accessor.LivingEntityDeathAccessor",
+    "accessor.SynchedEntityDataAccessor",
+    "accessor.SynchedEntityDataItemAccessor",
+    "compat.OmniEntityUtilMixin",
+    "compat.OmniFlashfurAttackMixin",
+    "compat.OmniMetapotentAttackMixin",
+    "compat.OmniRemovalUtilMixin",
+    "compat.TrialEntityHelperMixin",
+    "compat.Pig2AttackMixin"
+  ],
+  "client": [
+    "accessor.ClientTextTooltipAccessor",
+    "accessor.GuiSelectedItemAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

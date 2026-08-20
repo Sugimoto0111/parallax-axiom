@@ -7,8 +7,8 @@ plugins {
 }
 
 mixin {
-    add sourceSets.main, 'ultimatum.refmap.json'
-    config 'ultimatum.mixins.json'
+    add sourceSets.main, 'parallax_axiom.refmap.json'
+    config 'parallax_axiom.mixins.json'
 }
 
 version = mod_version
@@ -186,7 +186,7 @@ dependencies {
 
 tasks.register('embeddedAgentJar', Jar) {
     dependsOn 'compileEmbeddedAgentJava'
-    archiveFileName = 'ultimatum-agent.jar'
+    archiveFileName = 'parallax-axiom-agent.jar'
     destinationDirectory = layout.buildDirectory.dir('embedded')
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from sourceSets.embeddedAgent.output
@@ -199,7 +199,7 @@ tasks.register('embeddedAgentJar', Jar) {
     manifest {
         attributes(
                 'Manifest-Version': '1.0',
-                'Agent-Class': 'dev.srryo.ultimatum.agent.UltimatumAgent',
+                'Agent-Class': 'dev.srryo.parallaxaxiom.agent.ParallaxAxiomAgent',
                 'Can-Retransform-Classes': 'true',
                 'Can-Redefine-Classes': 'true'
         )

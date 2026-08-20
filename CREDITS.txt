@@ -36,9 +36,9 @@ pull requests, and just helping out the community in general. Thank you.
 =========================================================================
 
 No-Sugar 1.9.1 by consome-c11 is a public MIT-licensed reference used by
-Ultimatum. Version 0.7.0 adapts its forced-death sequencing, client erased-state
+Parallax Axiom. Version 0.7.0 adapts its forced-death sequencing, client erased-state
 animation model, self-attached Java-agent architecture, and universal
-getHealth/isAlive/isDeadOrDying return hooks. Ultimatum modifies and extends
+getHealth/isAlive/isDeadOrDying return hooks. Parallax Axiom modifies and extends
 that work with its own world-index eraser, persistent tombstones, logical
 controller discovery and compatibility fallbacks.
 
