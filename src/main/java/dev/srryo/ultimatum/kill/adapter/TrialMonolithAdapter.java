@@ -23,7 +23,11 @@ public final class TrialMonolithAdapter implements KillAdapter {
 
     @Override
     public boolean supports(Entity target) {
-        return target.getClass().getName().startsWith(PACKAGE_PREFIX);
+        // Tesseract's controller/proxy/handler structure is handled by the universal
+        // LogicalControllerEraser. Keep this adapter only for the soul-protected
+        // monolith entities whose special removal/loot contract is unrelated.
+        return target.getClass().getName().startsWith(PACKAGE_PREFIX)
+                && !target.getClass().getName().endsWith("TesseractBeastProxyEntity");
     }
 
     @Override

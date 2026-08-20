@@ -3,13 +3,18 @@
   "minVersion": "0.8",
   "package": "dev.srryo.ultimatum.mixin",
   "compatibilityLevel": "JAVA_17",
+  "plugin": "dev.srryo.ultimatum.mixin.plugin.UltimatumMixinPlugin",
   "refmap": "ultimatum.refmap.json",
   "mixins": [
     "EntityInvincibilityMixin",
+    "EntityTickListTombstoneMixin",
     "LivingEntityInvincibilityMixin",
+    "LivingEntityExecutionAnimationMixin",
+    "LivingEntityObservationMixin",
     "MinecraftServerTickMixin",
     "PersistentEntitySectionManagerMixin",
     "PlayerInvincibilityMixin",
+    "TransientEntitySectionManagerTombstoneMixin",
     "accessor.LivingEntityDeathAccessor",
     "accessor.SynchedEntityDataAccessor",
     "accessor.SynchedEntityDataItemAccessor",
@@ -19,6 +24,10 @@
     "compat.OmniRemovalUtilMixin",
     "compat.TrialEntityHelperMixin",
     "compat.Pig2AttackMixin"
+  ],
+  "client": [
+    "accessor.ClientTextTooltipAccessor",
+    "accessor.GuiSelectedItemAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

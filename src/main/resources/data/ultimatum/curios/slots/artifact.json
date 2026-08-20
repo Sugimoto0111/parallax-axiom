@@ -1,0 +1,7 @@
+{
+  "size": 1,
+  "order": 0,
+  "icon": "curios:slot/empty_curio_slot",
+  "render_toggle": false,
+  "drop_rule": "ALWAYS_KEEP"
+}

@@ -1,5 +1,366 @@
 # Changelog
 
+## 0.21.1
+
+- Record one of two mutually exclusive observation paths on an offhand vanilla spyglass
+- Observe fifty Ender Dragon, Wither or Warden deaths to create Terminal-Image Mirror
+- Observe fifty main-hand Totem activations to create Original-Image Mirror
+- Show live observation progress and convert completed spyglasses into permanent foil items
+- Register Zero Focus with a temporary vanilla model and no acquisition recipe
+- Use vanilla LivingEntity mixins so Omni-Mobs cannot silence observation events
+
+## 0.20.6
+
+- Assign tooltip animation by semantic role instead of a shared line number
+- Match Invariant Observer's title, lore and function animation to Final Conclusion even when Curios inserts another line
+
+## 0.20.5
+
+- Keep Invariant Observer's closing observation in a fixed neutral color
+- Give its Shift function line an unmistakable animated thin-film rainbow
+
+## 0.20.4
+
+- Replace Invariant Observer's 31x31 one-pixel line mask with the supplied 63x63 band mask
+- Preserve the existing sword-style contour renderer and enlarged held transforms for direct comparison
+
+## 0.20.3
+
+- Restore the Observer's exact sword-style contour shader without expanded pixel halos
+- Enlarge first-person held rendering by roughly 1.8x and third-person rendering by 1.35x
+- Leave GUI and Curios inventory scale unchanged while giving the thin mask room to resolve in hand
+
+## 0.20.2
+
+- Keep all Observer depth layers on one spatial rainbow instead of adding complementary tints into white
+- Expand the 31x31 mask by a restrained one-pixel shader halo for small inventory rendering
+- Increase film saturation while retaining the sword-style layered contour geometry
+
+## 0.20.1
+
+- Replace the Observer's solid voxel model with Final Conclusion's transparent contour planes
+- Keep the complete 31x31 mask intact on every independently drifting depth layer
+- Reuse the sword's traced halo shader, permanent rainbow film and alpha-boundary side shell
+
+## 0.20.0
+
+- Replace Invariant Observer's clipped flat mask passes with a true voxel-extruded item model
+- Convert every supplied white pixel into front, back and exposed side geometry
+- Preserve each complete ring while giving the four optical depths independent motion
+- Calculate the permanent rainbow film and moving white focus directly across the 3D model
+
+## 0.19.0
+
+- Add the supplied 31x31 white mask as Invariant Observer's inventory texture
+- Split its incomplete rings across four independently drifting and rotating optical depths
+- Apply the observer halo's permanent moving rainbow film and a restrained sweep highlight
+- Add transparent render padding and remove the vanilla enchantment glint
+
+## 0.18.9
+
+- Finish every textured contour pass before switching to the side-shell vertex format
+- Prevent the front and rear contour layers from becoming unmasked white rectangles
+
+## 0.18.8
+
+- Extrude the supplied sword mask's alpha boundary into a transparent rainbow side shell
+- Keep Final Conclusion visible when its animated contour planes are viewed edge-on
+- Rebuild the side geometry automatically from the active texture after resource reloads
+
+## 0.18.7
+
+- Match Final Conclusion's contour layers to the observer halo's full moving rainbow palette
+- Keep every contour permanently full-bright instead of boosting it only during attacks
+- Remove attack animation from the sword's emissive intensity
+
+## 0.18.6
+
+- Colour the independent contour layers with a restrained cyan-to-blue-violet depth palette
+- Give each layer a separate slow return-to-white cycle without restoring a rainbow effect
+
+## 0.18.5
+
+- Triple the visible horizontal and vertical drift of Final Conclusion's contour layers
+- Double their depth wander while retaining the overall wire-volume silhouette
+
+## 0.18.4
+
+- Give every contour-depth layer its own smooth pseudo-random drift
+- Vary horizontal, vertical and depth motion independently without destabilizing the sword volume
+
+## 0.18.3
+
+- Give Final Conclusion a seven-layer contour volume instead of one flat trace plane
+- Preserve the face-on brightness while exposing separated depth lines at oblique angles
+- Place the restrained refraction echoes just beyond the front and back contour faces
+
+## 0.18.2
+
+- Require ordinary entities to intersect the server-side view ray before fallback acquisition
+- Stop fallback targeting at the first solid block hit by the view ray
+- Retain the broad emergency acquisition only for entities with broken or detached bounds
+- Add regressions for off-axis and block-occluded targets
+
+## 0.18.1
+
+- Replace the filled graphite and procedural inner-space treatment with a transparent traced silhouette
+- Extract the sword's exact pixel boundary from the white mask in the fragment shader
+- Render the contour as a thin additive halo line with two restrained refraction echoes
+- Move a bright tracing head around the outline and intensify it during attacks
+
+## 0.18.0
+
+- Add a dedicated view-ray-projected shader for Final Conclusion's inner space
+- Reuse the solid-white sword texture as both silhouette and procedural interior mask
+- Generate achromatic refracted contours, displaced echoes and floating focus rings without new image assets
+- Anchor the virtual panorama to camera yaw and pitch so its contents shift with viewing angle
+
+## 0.17.3
+
+- Collapse the weapon's visual layers onto one physical plane
+- Composite body, outline and reflection by draw order without writing self-depth
+- Remove detached black mask pixels visible from extreme side angles
+
+## 0.17.2
+
+- Mirror every material layer around the sword's centre plane for identical two-sided depth
+- Prevent the rear outline and parallax layers from occluding the graphite body
+- Render the moving blade scan above both faces
+
+## 0.17.1
+
+- Replace Final Conclusion's painted texture with the supplied solid-white silhouette mask
+- Generate the graphite-glass body, pale outline and reflected face entirely in the item renderer
+- Let the procedural outline breathe subtly and intensify together with the attack pulse
+
+## 0.17.0
+
+- Adopt the supplied 16x16 transparent Final Conclusion texture as a sparse shape mask
+- Add a fully monochrome custom renderer with faint parallax impressions and a moving blade scan
+- Make the edge reflection flare with the vanilla attack swing across hand, GUI and world contexts
+- Remove the vanilla purple enchantment glint from Final Conclusion
+
+## 0.16.0
+
+- Replace the vanilla selected-item-name HUD for Final Conclusion and Invariant Observer only
+- Reuse the animated per-glyph thin-film wave and restrained refraction echoes above the hotbar
+- Add a compact fading black-mirror strip with animated film edges and displaced corner brackets
+- Preserve vanilla highlight duration, fade timing, HUD-height adjustment and all other items' rendering
+
+## 0.15.4
+
+- Normalize epoch milliseconds into a short float-safe time window before calculating tooltip animation phases
+- Advance per-glyph position, scale, title color, lore sweep and frame drift smoothly every rendered frame
+- Fix the apparent frozen text where refraction echoes rendered but all animation phases stayed unchanged
+
+## 0.15.3
+
+- Increase title motion to a clearly visible three-pixel per-glyph wave and lore motion to nearly two pixels
+- Stretch each glyph vertically as the wave passes instead of only translating its baseline
+- Split the title's delayed refraction into independently displaced cyan and magenta echoes
+- Log the first activation of the custom glyph renderer so runtime use can be verified directly
+
+## 0.15.2
+
+- Render the four signature tooltip lines glyph by glyph instead of moving each line as one rigid unit
+- Wave every character vertically with line-specific amplitude, speed and phase
+- Add a delayed dark refraction echo behind the title while its main glyphs drift horizontally
+- Keep vanilla rendering for every unrelated tooltip component
+
+## 0.15.1
+
+- Flow an animated thin-film gradient across the item title one character at a time
+- Sweep a restrained iridescent highlight through the two lore lines
+- Pulse the function hint independently while preserving each line's original formatting
+- Give the four Parallax Axiom text lines separate sub-pixel drift without moving unrelated tooltip content
+
+## 0.15.0
+
+- Add a custom textureless tooltip renderer for Final Conclusion and Invariant Observer
+- Render a translucent black-mirror panel with animated iridescent thin-film borders
+- Add displaced ghost contours, cursor-dependent glass seams, incomplete lens pixels and extended corner brackets
+- Extend animated elliptical lenses, skewed panes and detached film fragments beyond both sides of the tooltip
+- Preserve vanilla tooltip components, Shift detail switching and screen-edge positioning
+
+## 0.14.1
+
+- Resolve at most one server-authoritative look target during each Final Conclusion swing
+- Mark a normal direct attack as that swing's selected target so fallback scanning cannot acquire another mob
+- Detect rapid animation restarts while preserving unpickable-mob targeting and the vanilla inventory-tick fallback
+
+## 0.14.0
+
+- Adopt Parallax Axiom as the public mod name while preserving the ultimatum namespace for compatibility
+- Rename Absolute End to Final Conclusion and Absolute Artifact to Invariant Observer
+- Replace technical item descriptions with compact two-line observation lore in Japanese and English
+- Show one concise functional explanation only while Shift is held
+- Rename the keybind category and controls without changing existing bindings
+
+## 0.13.3
+
+- Enlarge the outer incomplete focus ring from 0.43 to 0.69 blocks in local radius
+- Enlarge the inner ring from 0.29 to 0.45 blocks and increase segment detail
+- Thicken both ring films slightly so the expanded outlines remain legible
+
+## 0.13.2
+
+- Reduce maximum visible follow separation from roughly 1.5 blocks to one block
+- Remove the eight-block internal emergency snap that caused repeated flicker during extreme flight
+- Clamp every follower's stored anchor continuously so fast movement holds a stable trailing position
+
+## 0.13.1
+
+- Replace spring overshoot with monotonic delayed interpolation that settles without passing the wearer
+- Give every pane its own deterministic position and rotation delay instead of scaling one shared motion
+- Apply separate stable delay profiles to both focus rings and all 22 film fragments
+- Allow delayed parts to trail by up to roughly 1.5 visible blocks in any direction
+
+## 0.13.0
+
+- Add spring-based delayed following for the observer array using interpolated world position and body rotation
+- Let the structure trail movement, overshoot slightly after abrupt stops and settle back into place
+- Give central panes restrained lag while outer panes, rings and fragments respond more independently
+- Clamp translation and rotation lag so teleports and extreme flight speeds cannot detach the effect
+
+## 0.12.5
+
+- Move 18 film fragments into loose bands beyond the left and right pane edges
+- Place the remaining four fragments above and below the pane group
+- Clear the center so fragment silhouettes no longer obscure the layered glass design
+
+## 0.12.4
+
+- Expand the observer array from 10 to 22 independently drifting film fragments
+- Mix seven fragment scales from tiny splinters to large irregular shards
+- Vary fragment height, distance, depth, aspect ratio and rotation speed to avoid a uniform ring
+
+## 0.12.3
+
+- Lower the observer array another 0.15 blocks behind the wearer
+
+## 0.12.2
+
+- Give every observer pane its own subtle horizontal drift, yaw and roll cycle
+- Offset each pane's timing so the array searches independently instead of swaying as one rigid object
+
+## 0.12.1
+
+- Enlarge the observer array by 25 percent and lower it behind the wearer
+- Keep its asymmetric pane layout during attacks instead of straightening or converging it
+- Retain only a brief iridescent intensity pulse as attack feedback
+
+## 0.12.0
+
+- Added the first textureless visual manifestation for the Absolute Artifact
+- Render layered transparent panes, incomplete focus rings and iridescent film fragments behind the wearer
+- Shift internal layers and visibility with the camera angle to create parallax without borrowing Fantasy Ending's starfield motif
+- Converge the floating array for a short instant when Absolute End attacks an entity
+
+## 0.11.3
+
+- Replaced the X emergency-stop control with a persistent step-assist toggle
+- Keep one-block step assist enabled by default and remove its modifier cleanly when disabled or unequipped
+
+## 0.11.2
+
+- Preserve active flight when Curios represents an Artifact NBT setting update as an unequip/equip swap
+- Only restore the original flight state when the Artifact slot actually becomes empty or changes item
+
+## 0.11.1
+
+- Prevent the Absolute Artifact's movement-speed modifier from inflating camera FOV
+- Preserve vanilla sprint, flight, bow and other non-Artifact FOV behavior
+
+## 0.11.0
+
+- Added five persistent flight-speed stages with the existing sprint boost capped at absolute speed
+- Added an immediate aerial brake and default-on client-side inertia canceling
+- Added toggleable hidden night vision and a 64-block item magnet
+- Reject vanilla freezing, powder-snow and stuck-in-block movement restraints through events and Mixins
+- Added independent, rebindable V/X/C/N/B controls while retaining R for staged reach
+
+## 0.10.0
+
+- Reject harmful effects at application time and purge direct hostile effect-map writes every tick
+- Added persistent reach stages: standard, 8, 16, 32 and 64 blocks
+- Added an R keybind and action-bar feedback for cycling reach
+- Unified Forge block/entity reach and Absolute End's unpickable-target resolver
+
+## 0.9.0
+
+- Added fuel-free survival flight while the Absolute Artifact is equipped
+- Added sprint-controlled flight boost with automatic ability synchronization
+- Added doubled ground speed, tripled swim speed and one-block step assist
+- Restore the player's original flight permission and speed when the artifact is removed
+
+## 0.8.0
+
+- Added the invisible Absolute Artifact for a dedicated Curios artifact slot
+- Moved absolute player invincibility from holding Absolute End to equipping the artifact
+- Made the artifact persist through death and exposed a stable equipped-state hook for future visual manifestations
+- Added Curios 5.14.1 as a required dependency
+
+## 0.7.1
+
+- Delay the vanilla death POOF event until the corpse animation finishes, immediately before final removal
+- Emit the death POOF once, matching vanilla, instead of twice at forced-death start
+
+## 0.7.0
+
+- Rebuilt universal forced death around NoSugar's MIT-licensed execution ordering and client erased-state model
+- Added an embedded Java agent that hooks every getHealth/isAlive/isDeadOrDying override when NoSugar's agent is absent
+- Force death loot, LivingDeathEvent, death sound, strong-hit sound and death particles before the delayed erase
+- Added a client death packet and deathTime clock so protected mobs render the normal red/falling animation for 21 ticks
+- Strengthened final client-index erasure and prioritize LivingEntity targets over protected projectiles
+
+## 0.6.1
+
+- Route every modded LivingEntity, including Trial/Invader Monolith, directly through the universal animated-death kernel without a hostile hurt probe
+- Resolve left-click targets on the server without trusting Entity.isPickable, so attack-packet-resistant mobs still enter the generic pipeline
+- Align resistant-monolith presentation with NoSugar ordering: immediate death state and boss bar 0, followed by final erasure after 21 ticks
+
+## 0.6.0
+
+- Mod名・クラス名・フィールド名に依存しない論理Controller/Proxy検出器を追加
+- Proxy→Controller、Controller→Proxy、static registry登録の三条件で非Entity本体を安全に認定
+- 認定したControllerをstatic Collection/Mapから除去し、終了フラグ、BossEvent、全Proxyを汎用消去
+- Metapotent Flashfur専用アダプターを実行経路から撤去し、新しい汎用論理Entity層へ統合
+- static registry直下に加え、static Map/List→level Handler→Controller Listの2段階管理を検出
+- Tesseract BeastをTrial専用アダプターから汎用論理Entity層へ移行
+
+## 0.5.4
+
+- Omni専用アダプターをMetapotent Flashfurの非Entityコントローラーだけに限定
+- Alarm、Silverlight、通常Flashfurを未知Mod Mobと同じ汎用死亡核へ統合
+- Modded LivingEntityは危険な`hurt()`を呼ばず、死亡・ドロップ・21tick死亡演出・最終消去を汎用実行
+- ボスバーを即削除せず、HP 0表示から死亡演出後に本体と同時削除する順序へ変更
+
+## 0.5.3
+
+- Omni-Mobsの死亡成立直後にserver tick listから隔離し、反撃・移動だけを即停止
+- クライアント追跡は20tick維持して、赤くなって倒れる本来の死亡演出を復元
+- 死亡演出終了後に決定論的最終消去を実行
+
+## 0.5.2
+
+- Alarm、FlashfurなどOmni-Mobsの`hurt()`反撃経路を呼ばず、汎用死亡核へ直接移行
+- 汎用死亡、Omni復活元解除、決定論的最終消去を同一server tick内で完了
+- 25tickの確認待ち中に移動・反撃できていた時間を解消
+
+## 0.5.1
+
+- Omni-Mobsの通常死亡成立直後にクライアント表示とボスバーを消し、約20tickの見かけ上の生存時間を解消
+- サーバー側の本物の死亡処理、ドロップ、Modコールバックは従来どおり完走
+- 通常Mobのバニラ死亡演出は変更なし
+
+## 0.5.0
+
+- NoSugar 1.9.1のEntityLookup差し替え方式を独自実装し、`byId` / `byUuid`だけでなくtick list、全EntitySection、known UUID、ChunkMapも決定論的に再構築
+- 最終削除UUIDをワールドSavedDataへ永続化し、再起動後の復活、tick list再登録、チャンク保存を拒否
+- 専用Mod名やフィールド名に依存しないBossEvent探索を追加し、未知のボスバーにも削除パケットを送信
+- クライアント側のEntityLookup、tick list、全EntitySectionも差し替え、同一UUIDの再登録を拒否
+- 従来どおり通常Mobは通常死亡を優先し、上記の侵襲的処理は全死亡手段を拒否した対象にだけ適用
+
 ## 0.4.1
 
 - 即死操作を左クリックだけに統一
