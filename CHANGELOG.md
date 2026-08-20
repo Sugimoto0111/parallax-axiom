@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.22.0
+
+- Replace the temporary `ultimatum` namespace with the final `parallax_axiom` mod ID
+- Rename the registered items to `final_conclusion` and `invariant_observer`
+- Move models, textures, shaders, translations, tags and Mixin metadata to the new namespace
+- Rename observation and artifact NBT keys to the Parallax Axiom prefix
+- Move the Java package to `dev.srryo.parallaxaxiom` and align principal class and agent names
+- Rewrite the README around features, implementation details, compatibility and testing
+
 ## 0.21.1
 
 - Record one of two mutually exclusive observation paths on an offhand vanilla spyglass
